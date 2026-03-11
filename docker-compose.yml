@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: applymate-db
+    environment:
+      POSTGRES_DB: applymate
+      POSTGRES_USER: applymate
+      POSTGRES_PASSWORD: applymate
+    ports:
+      - "5432:5432"
+    volumes:
+      - applymate_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U applymate -d applymate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: applymate-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/applymate
+      SPRING_DATASOURCE_USERNAME: applymate
+      SPRING_DATASOURCE_PASSWORD: applymate
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-256-bits}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    container_name: applymate-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  applymate_pgdata:
