@@ -27,7 +27,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: applymate
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-256-bits}
     ports:
-      - "8080:8080"
+      - "8000:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,10 +37,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080/api
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
     container_name: applymate-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
     ports:
       - "3000:3000"
     depends_on:
