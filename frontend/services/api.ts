@@ -26,7 +26,7 @@ export interface AuthResponse {
   email: string;
 }
 
-function getToken(): string | null {
+export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("applymate_token");
 }
@@ -69,10 +69,30 @@ export async function register(
   email: string,
   password: string
 ): Promise<AuthResponse> {
-  return fetchApi<AuthResponse>("/auth/register", {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
+    headers,
     body: JSON.stringify({ email, password }),
   });
+  if (res.status === 409) {
+    throw new Error("That email is already registered. Try logging in.");
+  }
+  if (!res.ok) {
+    let message = res.statusText;
+    const text = await res.text();
+    if (text) {
+      try {
+        const data = JSON.parse(text) as { error?: string };
+        if (typeof data.error === "string") message = data.error;
+        else message = text;
+      } catch {
+        message = text;
+      }
+    }
+    throw new Error(message);
+  }
+  return res.json() as Promise<AuthResponse>;
 }
 
 export async function login(
@@ -83,6 +103,16 @@ export async function login(
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+}
+
+export interface AnalyticsSummary {
+  totalApplications: number;
+  byStatus: Record<string, number>;
+  applicationsByMonth: { month: string; count: number }[];
+}
+
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  return fetchApi<AnalyticsSummary>("/analytics/summary");
 }
 
 export async function listApplications(
