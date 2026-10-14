@@ -1,6 +1,9 @@
 spring:
   application:
     name: applymate-backend
+  # Optional local overrides — create backend/application-local.yml (gitignored), no exports needed
+  config:
+    import: optional:file:./application-local.yml
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/applymate}
     username: ${SPRING_DATASOURCE_USERNAME:applymate}

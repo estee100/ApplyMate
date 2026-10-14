@@ -21,11 +21,13 @@ public class JwtService {
     public String generateToken(String email) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
+        // Use HS256 explicitly so secrets >= 32 bytes work. JJWT 0.12 otherwise
+        // infers HS512 from key length; HS512 requires 64+ bytes and throws on short secrets.
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(now)
                 .expiration(expiry)
-                .signWith(signingKey())
+                .signWith(signingKey(), Jwts.SIG.HS256)
                 .compact();
     }
 

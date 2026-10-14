@@ -1,0 +1,17 @@
+# SECURITY: Copy to application-local.yml (same folder). Never commit application-local.yml.
+# That file is listed in .gitignore at repo root and in backend/.gitignore.
+# Spring Boot loads application-local.yml automatically — no env exports required.
+#
+# Prefer setting JWT via environment instead of this file when possible:
+#   export JWT_SECRET="your-long-random-secret"   # Git Bash
+# application.yml already reads JWT_SECRET.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/applymate
+    username: applymate
+    password: applymate
+
+jwt:
+  # HS256: any secret 32+ characters is fine for local dev. Or use JWT_SECRET env.
+  secret: "paste-or-generate-locally-never-commit"

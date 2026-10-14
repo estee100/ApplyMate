@@ -1,11 +1,12 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Build with Gradle (no local Maven/Gradle required on host when using Docker)
+FROM gradle:8.11-jdk21-alpine AS build
 WORKDIR /app
-COPY pom.xml .
+COPY build.gradle.kts settings.gradle.kts ./
 COPY src ./src
-RUN apk add --no-cache maven && mvn -q -DskipTests package
+RUN gradle bootJar --no-daemon -q
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

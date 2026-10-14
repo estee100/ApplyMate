@@ -8,8 +8,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: { DEFAULT: "#2563eb", dark: "#1d4ed8" },
+        primary: { DEFAULT: "#4f46e5", dark: "#4338ca" },
         surface: { DEFAULT: "#f8fafc", card: "#ffffff" },
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        soft: "0 4px 24px -4px rgb(15 23 42 / 0.08)",
       },
     },
   },

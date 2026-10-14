@@ -1,16 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import {
   listApplications,
   deleteApplication,
+  updateApplication,
   type ApplicationStatus,
   type JobApplication,
   getToken,
 } from "@/services/api";
+
+const KANBAN_STATUSES: ApplicationStatus[] = [
+  "APPLIED",
+  "INTERVIEWING",
+  "OFFER",
+  "REJECTED",
+  "WITHDRAWN",
+];
+
+function appToUpdateBody(app: JobApplication, status: ApplicationStatus) {
+  return {
+    jobTitle: app.jobTitle,
+    companyName: app.companyName,
+    location: app.location,
+    jobPostingUrl: app.jobPostingUrl,
+    status,
+    dateApplied: app.dateApplied,
+    notes: app.notes,
+  };
+}
 
 const STATUSES: (ApplicationStatus | "")[] = [
   "",
@@ -47,6 +68,28 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<ApplicationStatus | "">("");
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"table" | "kanban">("table");
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<ApplicationStatus | null>(null);
+  const [tableSearch, setTableSearch] = useState("");
+
+  const filteredTableApplications = useMemo(() => {
+    const q = tableSearch.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter((app) => {
+      const haystack = [
+        app.jobTitle,
+        app.companyName,
+        app.location,
+        app.notes,
+        STATUS_LABELS[app.status],
+        app.dateApplied,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [applications, tableSearch]);
 
   useEffect(() => {
     if (!getToken()) {
@@ -54,12 +97,26 @@ export default function DashboardPage() {
       return;
     }
     load();
-  }, [filter, router]);
+  }, [filter, view, router]);
+
+  // Safety net: if drag ends without hitting a column onDrop, still clear visual state
+  useEffect(() => {
+    if (view !== "kanban") return;
+    const clear = () => {
+      setDraggingId(null);
+      setDropTarget(null);
+    };
+    window.addEventListener("dragend", clear);
+    return () => window.removeEventListener("dragend", clear);
+  }, [view]);
 
   async function load() {
     setLoading(true);
     try {
-      const data = await listApplications(filter || undefined);
+      // Kanban needs all columns populated — always fetch full list when in kanban view
+      const data = await listApplications(
+        view === "kanban" ? undefined : filter || undefined
+      );
       setApplications(data);
     } catch {
       setApplications([]);
@@ -80,6 +137,34 @@ export default function DashboardPage() {
 
   const byStatus = (status: ApplicationStatus) =>
     applications.filter((a) => a.status === status);
+
+  async function handleDropOnColumn(
+    targetStatus: ApplicationStatus,
+    e: React.DragEvent
+  ) {
+    e.preventDefault();
+    setDropTarget(null);
+    // onDragEnd does not always fire on the source node after a successful drop —
+    // clear drag state here so cards never stay translucent.
+    setDraggingId(null);
+    const idStr = e.dataTransfer.getData("applicationId");
+    const id = parseInt(idStr, 10);
+    if (Number.isNaN(id)) return;
+    const app = applications.find((a) => a.id === id);
+    if (!app || app.status === targetStatus) return;
+    const prev = applications;
+    setApplications((list) =>
+      list.map((a) =>
+        a.id === id ? { ...a, status: targetStatus } : a
+      )
+    );
+    try {
+      await updateApplication(id, appToUpdateBody(app, targetStatus));
+    } catch {
+      setApplications(prev);
+      alert("Could not update status. Try again.");
+    }
+  }
 
   if (!getToken() && typeof window !== "undefined") return null;
 
@@ -136,6 +221,42 @@ export default function DashboardPage() {
               Kanban
             </button>
           </div>
+          {view === "table" && (
+            <div className="w-full sm:w-auto sm:min-w-[240px] sm:flex-1 sm:max-w-md">
+              <label htmlFor="table-search" className="sr-only">
+                Search applications
+              </label>
+              <div className="relative">
+                <span
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  aria-hidden
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  id="table-search"
+                  type="search"
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  placeholder="Search job, company, location…"
+                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm placeholder:text-slate-400"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -182,8 +303,24 @@ export default function DashboardPage() {
                         </Link>
                       </td>
                     </tr>
+                  ) : filteredTableApplications.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-slate-500"
+                      >
+                        No applications match &ldquo;{tableSearch.trim()}&rdquo;.{" "}
+                        <button
+                          type="button"
+                          className="text-primary font-medium hover:underline"
+                          onClick={() => setTableSearch("")}
+                        >
+                          Clear search
+                        </button>
+                      </td>
+                    </tr>
                   ) : (
-                    applications.map((app) => (
+                    filteredTableApplications.map((app) => (
                       <tr
                         key={app.id}
                         className="border-b border-slate-100 hover:bg-slate-50"
@@ -245,45 +382,95 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {(
-              [
-                "APPLIED",
-                "INTERVIEWING",
-                "OFFER",
-                "REJECTED",
-                "WITHDRAWN",
-              ] as ApplicationStatus[]
-            ).map((status) => (
-              <div
-                key={status}
-                className="bg-slate-100 rounded-xl p-3 min-h-[200px]"
-              >
-                <h3 className="font-semibold text-slate-800 text-sm mb-3">
-                  {STATUS_LABELS[status]}
-                </h3>
-                <ul className="space-y-2">
-                  {byStatus(status).map((app) => (
-                    <li
-                      key={app.id}
-                      className="bg-white rounded-lg p-3 shadow-sm border border-slate-200 text-sm"
-                    >
-                      <p className="font-medium text-slate-900">
-                        {app.jobTitle}
-                      </p>
-                      <p className="text-slate-600">{app.companyName}</p>
-                      <Link
-                        href={`/applications/${app.id}/edit`}
-                        className="text-primary text-xs mt-1 inline-block hover:underline"
+          <>
+            {filter !== "" && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4">
+                Filter is ignored in Kanban — showing all applications. Switch
+                to Table to filter.
+              </p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {KANBAN_STATUSES.map((status) => (
+                <div
+                  key={status}
+                  className={`rounded-xl p-3 min-h-[240px] transition-colors ${
+                    dropTarget === status
+                      ? "bg-violet-100 ring-2 ring-violet-400 ring-inset"
+                      : "bg-slate-100"
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDropTarget(status);
+                  }}
+                  onDrop={(e) => handleDropOnColumn(status, e)}
+                >
+                  <h3 className="font-semibold text-slate-800 text-sm mb-3">
+                    {STATUS_LABELS[status]}
+                    <span className="ml-1 font-normal text-slate-500">
+                      ({byStatus(status).length})
+                    </span>
+                  </h3>
+                  <ul className="space-y-2 min-h-[120px]">
+                    {byStatus(status).map((app) => (
+                      <li
+                        key={app.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(
+                            "applicationId",
+                            String(app.id)
+                          );
+                          e.dataTransfer.effectAllowed = "move";
+                          setDraggingId(app.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                          setDropTarget(null);
+                        }}
+                        className={`bg-white rounded-lg p-3 shadow-sm border text-sm cursor-grab active:cursor-grabbing select-none transition-shadow ${
+                          draggingId === app.id
+                            ? "border-violet-400 ring-2 ring-violet-400/50 shadow-md"
+                            : "border-slate-200 hover:border-slate-300"
+                        }`}
                       >
-                        Edit
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+                        <p className="font-medium text-slate-900 pr-6">
+                          {app.jobTitle}
+                        </p>
+                        <p className="text-slate-600">{app.companyName}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span
+                            className="text-slate-400"
+                            aria-hidden
+                            title="Drag to move"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+                            </svg>
+                          </span>
+                          <Link
+                            href={`/applications/${app.id}/edit`}
+                            className="text-primary text-xs font-medium hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                            onDragStart={(e) => e.preventDefault()}
+                          >
+                            Edit
+                          </Link>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-4">
+              Drag a card onto another column to change its status.
+            </p>
+          </>
         )}
       </div>
     </div>

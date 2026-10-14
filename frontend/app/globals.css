@@ -4,10 +4,17 @@
 
 :root {
   --foreground: #0f172a;
-  --background: #f1f5f9;
+  --background: #f8fafc;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+}
+
+/* Smooth focus for form controls */
+@layer base {
+  input:focus-visible {
+    @apply outline-none ring-2 ring-violet-500/30 border-violet-500;
+  }
 }

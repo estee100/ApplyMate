@@ -37,8 +37,9 @@ ApplyMate/
 | POST | `/applications` | Create |
 | PUT | `/applications/{id}` | Update |
 | DELETE | `/applications/{id}` | Delete |
+| GET | `/analytics/summary` | Aggregated counts by status + per month (current user) |
 
-All application endpoints require `Authorization: Bearer <token>`.
+All application and analytics endpoints require `Authorization: Bearer <token>`.
 
 ## Database
 
@@ -48,6 +49,8 @@ All application endpoints require `Authorization: Bearer <token>`.
 Status enum: `APPLIED`, `INTERVIEWING`, `OFFER`, `REJECTED`, `WITHDRAWN`.
 
 ## Local development
+
+**Secrets:** Only `application-local.yml.example` belongs in git. Copy it to `backend/application-local.yml` (gitignored at repo root and under `backend/`) and set your JWT there or via `JWT_SECRET`. If `application-local.yml` was ever committed, run `git rm --cached backend/application-local.yml` and rotate any exposed secrets.
 
 ### Option A: Docker Compose
 
@@ -59,10 +62,10 @@ docker compose up --build
 ```
 
 - Frontend: http://localhost:3000  
-- Backend: http://localhost:8080/api  
+- Backend: http://localhost:8000/api  
 - Postgres: localhost:5432 (user/password/db: `applymate`)
 
-Frontend calls the API at `http://localhost:8080/api` (set in `docker-compose.yml` as `NEXT_PUBLIC_API_URL`). Rebuild the frontend image if you change the API URL.
+Frontend calls the API at `http://localhost:8000/api` (set in `docker-compose.yml` as `NEXT_PUBLIC_API_URL`). Rebuild the frontend image if you change the API URL.
 
 ### Option B: Run services locally
 
@@ -74,11 +77,13 @@ Frontend calls the API at `http://localhost:8080/api` (set in `docker-compose.ym
 
 2. **Backend** — from `backend/`:
 
-   ```bash
-   mvn spring-boot:run
-   ```
+   **Maven:** `mvn spring-boot:run`  
+   **Gradle:** `gradle bootRun` (or `./gradlew bootRun` after generating the wrapper — see below)
 
    Configure `application.yml` or env: `SPRING_DATASOURCE_*`, `JWT_SECRET`.
+
+   The backend supports **both** Maven (`pom.xml`) and Gradle (`build.gradle.kts`). Docker builds use **Gradle** by default. To add the Gradle wrapper without installing Gradle:  
+   `docker run --rm -v "$(pwd):/app" -w /app gradle:8.11-jdk21-alpine gradle wrapper --gradle-version=8.11`
 
 3. **Frontend** — from `frontend/`:
 
