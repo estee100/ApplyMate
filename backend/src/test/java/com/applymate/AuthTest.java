@@ -48,6 +48,16 @@ class AuthTest extends IntegrationTest {
     }
 
     @Test
+    void everyResponseCarriesARequestIdAndUnsafeIdsAreReplaced() throws Exception {
+        mvc.perform(get("/health").header("X-Request-Id", "client-trace-1234"))
+                .andExpect(header().string("X-Request-Id", "client-trace-1234"));
+        // A header that could forge log lines is not echoed.
+        String replaced = mvc.perform(get("/health").header("X-Request-Id", "evil value <script> with spaces"))
+                .andReturn().getResponse().getHeader("X-Request-Id");
+        org.assertj.core.api.Assertions.assertThat(replaced).matches("[a-f0-9]{16}");
+    }
+
+    @Test
     void missingOrBadTokenIs401NotForbidden() throws Exception {
         mvc.perform(get("/applications")).andExpect(status().isUnauthorized());
         mvc.perform(get("/applications").header("Authorization", "Bearer not-a-jwt"))

@@ -43,6 +43,13 @@ services:
       LOG_RESET_LINKS: ${LOG_RESET_LINKS:-true}
     ports:
       - "8000:8080"
+      # 9091 (health and Prometheus metrics) is deliberately not published.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9091/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,7 +65,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   applymate_pgdata:

@@ -31,7 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.ai.per-minute-limit-per-user=100",
         // Every test registers from the same MockMvc address.
         "app.auth.register-per-hour-per-ip=100000",
-        "app.auth.login-per-15-minutes-per-ip=100000"
+        "app.auth.login-per-15-minutes-per-ip=100000",
+        // A random management port, so tests never collide with a running app.
+        "management.server.port=0"
 })
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)

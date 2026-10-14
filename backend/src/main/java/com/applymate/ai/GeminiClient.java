@@ -3,6 +3,8 @@ package com.applymate.ai;
 import com.applymate.config.AppProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -35,7 +37,6 @@ import java.util.regex.Pattern;
 public class GeminiClient implements LlmClient {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);
-    private static final String ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
     private static final Duration[] BACKOFF = {Duration.ofSeconds(2), Duration.ofSeconds(5)};
     private static final Duration DAILY_SKIP = Duration.ofHours(1);
     private static final Duration MINUTE_SKIP = Duration.ofSeconds(60);
@@ -44,17 +45,26 @@ public class GeminiClient implements LlmClient {
     private final AppProperties.Ai config;
     private final ObjectMapper mapper;
     private final Clock clock;
+    private final MeterRegistry metrics;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+
+    private Duration[] backoff = BACKOFF;
+
+    /** For tests: retry without waiting seconds. */
+    void setBackoff(Duration... backoff) {
+        this.backoff = backoff;
+    }
 
     /** model -> skip until; plus whether the skip was for the daily quota. */
     private final Map<String, Skip> exhausted = new ConcurrentHashMap<>();
 
     private record Skip(Instant until, boolean daily) {}
 
-    public GeminiClient(AppProperties properties, ObjectMapper mapper, Clock clock) {
+    public GeminiClient(AppProperties properties, ObjectMapper mapper, Clock clock, MeterRegistry metrics) {
         this.config = properties.ai();
         this.mapper = mapper;
         this.clock = clock;
+        this.metrics = metrics;
     }
 
     @Override
@@ -67,13 +77,28 @@ public class GeminiClient implements LlmClient {
         String body = requestBody(system, prompt, schema);
         boolean hitQuota = false;
         for (String model : models) {
-            HttpResponse<String> response = callWithRetry(label, model, body);
+            Timer.Sample sample = Timer.start(metrics);
+            HttpResponse<String> response;
+            try {
+                response = callWithRetry(label, model, body);
+            } catch (RuntimeException e) {
+                record(sample, label, model, "unavailable");
+                throw e;
+            }
             int status = response.statusCode();
             if (status == 200) {
-                return new Result<>(parse(label, response.body(), schema), model);
+                try {
+                    T value = parse(label, response.body(), schema);
+                    record(sample, label, model, "success");
+                    return new Result<>(value, model);
+                } catch (RuntimeException e) {
+                    record(sample, label, model, "unreadable");
+                    throw e;
+                }
             }
             String text = response.body() == null ? "" : response.body();
             if (status == 429 || text.contains("RESOURCE_EXHAUSTED")) {
+                record(sample, label, model, "quota");
                 boolean daily = text.contains("PerDay");
                 exhausted.put(model, new Skip(Instant.now(clock).plus(daily ? DAILY_SKIP : retryDelay(text)), daily));
                 log.warn("Gemini {}: {} quota reached on {}, trying the next model", label, daily ? "daily" : "per-minute", model);
@@ -81,9 +106,11 @@ public class GeminiClient implements LlmClient {
                 continue;
             }
             if (status == 404) {
+                record(sample, label, model, "model_missing");
                 log.error("Gemini model {} is not available on this key", model);
                 continue;
             }
+            record(sample, label, model, status >= 500 ? "unavailable" : "error");
             if (status >= 500) throw AiException.busy();
             // Status and a prefix only: the body never contains the key, but stay terse.
             log.error("Gemini {} failed on {}: HTTP {} {}", label, model, status, text.substring(0, Math.min(300, text.length())));
@@ -93,8 +120,17 @@ public class GeminiClient implements LlmClient {
         throw AiException.failed();
     }
 
+    /** Latency and outcome per model and feature: shows which model answers and how often quota runs out. */
+    private void record(Timer.Sample sample, String label, String model, String outcome) {
+        sample.stop(Timer.builder("applymate.ai.request")
+                .description("Gemini calls by feature, model and outcome")
+                .tag("feature", label).tag("model", model).tag("outcome", outcome)
+                .register(metrics));
+    }
+
     private HttpResponse<String> callWithRetry(String label, String model, String body) {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(String.format(ENDPOINT, URLEncoder.encode(model, StandardCharsets.UTF_8))))
+        String endpoint = config.baseUrl() + "/models/" + URLEncoder.encode(model, StandardCharsets.UTF_8) + ":generateContent";
+        HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
                 .timeout(Duration.ofSeconds(90))
                 .header("Content-Type", "application/json")
                 // Header, not query string, so the key never appears in a logged URL.
@@ -104,14 +140,14 @@ public class GeminiClient implements LlmClient {
         for (int attempt = 0; ; attempt++) {
             try {
                 HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 503 && attempt < BACKOFF.length) {
+                if (response.statusCode() == 503 && attempt < backoff.length) {
                     log.warn("Gemini {} overloaded on {}, retrying", label, model);
-                    Thread.sleep(BACKOFF[attempt].toMillis());
+                    Thread.sleep(backoff[attempt].toMillis());
                     continue;
                 }
                 return response;
             } catch (IOException e) {
-                if (attempt < BACKOFF.length) continue;
+                if (attempt < backoff.length) continue;
                 log.error("Gemini {} unreachable: {}", label, e.getClass().getSimpleName());
                 throw AiException.busy();
             } catch (InterruptedException e) {

@@ -1,6 +1,8 @@
 package com.applymate.controller;
 
+import com.applymate.config.RequestIdFilter;
 import com.applymate.error.ApiException;
+import org.slf4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -60,7 +62,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleUnexpected(Exception ex) {
         // Never echo internal exception text: it can carry SQL, URLs or keys.
         log.error("Unhandled error", ex);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong. Please try again.");
+        // The request id lets a user's report be matched to this log line.
+        String requestId = MDC.get(RequestIdFilter.MDC_KEY);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "error", "Something went wrong. Please try again.",
+                "requestId", requestId == null ? "" : requestId));
     }
 
     private static ResponseEntity<Map<String, String>> error(HttpStatus status, String message) {

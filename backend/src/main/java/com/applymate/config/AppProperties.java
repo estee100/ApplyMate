@@ -20,7 +20,9 @@ public record AppProperties(
             @DefaultValue({"gemini-flash-latest", "gemini-flash-lite-latest"}) List<String> models,
             /** Per-user cap so one person cannot burn the shared free-tier quota. */
             @DefaultValue("25") int dailyLimitPerUser,
-            @DefaultValue("6") int perMinuteLimitPerUser
+            @DefaultValue("6") int perMinuteLimitPerUser,
+            /** Overridable so tests can point the client at a local fake. */
+            @DefaultValue("https://generativelanguage.googleapis.com/v1beta") String baseUrl
     ) {
         public boolean enabled() {
             return apiKey != null && !apiKey.isBlank();

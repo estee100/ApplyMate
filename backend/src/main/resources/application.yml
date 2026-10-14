@@ -49,6 +49,7 @@ app:
     models: ${GEMINI_MODELS:gemini-flash-latest,gemini-flash-lite-latest}
     daily-limit-per-user: ${AI_DAILY_LIMIT_PER_USER:25}
     per-minute-limit-per-user: ${AI_PER_MINUTE_LIMIT_PER_USER:6}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
   jobs:
     adzuna-app-id: ${ADZUNA_APP_ID:}
     adzuna-app-key: ${ADZUNA_APP_KEY:}
@@ -63,6 +64,29 @@ app:
     register-per-hour-per-ip: ${REGISTER_PER_HOUR_PER_IP:10}
     login-per-15-minutes-per-ip: ${LOGIN_PER_15_MINUTES_PER_IP:50}
 
+# Health and metrics on their own port, which is never published publicly.
+management:
+  server:
+    port: ${MANAGEMENT_PORT:9091}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: applymate
+    distribution:
+      percentiles-histogram:
+        applymate.ai.request: true
+        http.server.requests: true
+
 logging:
   level:
     com.applymate: INFO
+  pattern:
+    # Every line carries the request id set by RequestIdFilter.
+    level: "%5p [%X{requestId:-}]"
