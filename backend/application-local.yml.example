@@ -1,0 +1,27 @@
+# SECURITY: Copy to application-local.yml (same folder). Never commit application-local.yml.
+# That file is listed in .gitignore at repo root and in backend/.gitignore.
+# Spring Boot loads application-local.yml automatically, no env exports required.
+# Every value here can also be set as an environment variable (see application.yml).
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/applymate
+    username: applymate
+    password: applymate
+
+jwt:
+  # HS256: any secret of 32+ characters. Or use the JWT_SECRET env var.
+  secret: "paste-or-generate-locally-never-commit"
+
+app:
+  ai:
+    # Free key: https://aistudio.google.com/apikey  (without it, AI features are off)
+    api-key: ""
+  jobs:
+    # Free key: https://developer.adzuna.com  (without it, the feed shows remote jobs only)
+    adzuna-app-id: ""
+    adzuna-app-key: ""
+    country: ca
+  mail:
+    # Prints password reset links to the console instead of emailing them. Local only.
+    log-links-when-disabled: true

@@ -1,0 +1,109 @@
+# Terms the ATS check looks for in job adverts. One per line; "a|b" lists variants
+# that count as the same term (the first is shown). Matching is case-insensitive.
+# Avoid plain English words ("Express", "Security") and one-letter names ("R"):
+# they match ordinary prose and make the check report skills that are not there.
+Java
+Python
+JavaScript|JS
+TypeScript
+Go|Golang
+Rust
+C++|cpp
+C#|csharp
+Kotlin
+Swift
+Ruby
+PHP
+Scala
+SQL
+NoSQL
+Bash|shell scripting
+HTML
+CSS
+Spring Boot|Spring
+Spring Security
+Hibernate|JPA
+Django
+Flask
+FastAPI
+Node.js|NodeJS|Node
+Express.js
+React|React.js|ReactJS
+Next.js|NextJS
+Vue|Vue.js
+Angular
+Svelte
+Redux
+Tailwind|Tailwind CSS
+GraphQL
+REST|RESTful|REST APIs
+gRPC
+Microservices|microservice
+PostgreSQL|Postgres
+MySQL
+MongoDB
+Redis
+Elasticsearch
+Kafka
+RabbitMQ
+DynamoDB
+Snowflake
+BigQuery
+Spark|Apache Spark
+Hadoop
+Airflow
+dbt
+Pandas
+NumPy
+scikit-learn|sklearn
+TensorFlow
+PyTorch
+Machine Learning|ML
+Deep Learning
+NLP|natural language processing
+LLM|LLMs|large language models
+Computer Vision
+Data Engineering
+Data Analysis|data analytics
+Statistics
+Tableau
+Power BI
+Excel
+AWS|Amazon Web Services
+Azure
+GCP|Google Cloud
+Docker
+Kubernetes|K8s
+Terraform
+Ansible
+Linux
+CI/CD|continuous integration
+GitHub Actions
+Jenkins
+Git
+Agile
+Scrum
+Jira
+TDD|test-driven development
+Unit Testing|unit tests
+JUnit
+Jest
+Cypress
+Playwright
+Selenium
+Observability
+Prometheus
+Grafana
+OAuth
+Distributed Systems
+System Design
+Object-Oriented|OOP
+Data Structures
+Algorithms
+Figma
+Android
+iOS
+React Native
+Flutter
+Embedded
+Networking

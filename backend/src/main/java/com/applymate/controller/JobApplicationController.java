@@ -1,66 +1,79 @@
 package com.applymate.controller;
 
-import com.applymate.dto.JobApplicationRequest;
-import com.applymate.dto.JobApplicationResponse;
+import com.applymate.dto.ApplicationDtos.*;
 import com.applymate.model.ApplicationStatus;
 import com.applymate.service.JobApplicationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/applications")
 public class JobApplicationController {
 
-    private final JobApplicationService jobApplicationService;
+    private final JobApplicationService service;
 
-    public JobApplicationController(JobApplicationService jobApplicationService) {
-        this.jobApplicationService = jobApplicationService;
+    public JobApplicationController(JobApplicationService service) {
+        this.service = service;
     }
 
-    @GetMapping
-    public ResponseEntity<List<JobApplicationResponse>> list(
-            @RequestParam(required = false) ApplicationStatus status
-    ) {
-        return ResponseEntity.ok(jobApplicationService.findAllForCurrentUser(status));
+    @GetMapping("/applications")
+    public List<ApplicationResponse> list(@RequestParam(required = false) ApplicationStatus status) {
+        return service.list(status);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<JobApplicationResponse> get(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(jobApplicationService.findById(id));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/applications/stats")
+    public StatsResponse stats() {
+        return service.stats();
     }
 
-    @PostMapping
-    public ResponseEntity<JobApplicationResponse> create(@Valid @RequestBody JobApplicationRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(jobApplicationService.create(request));
+    @PostMapping("/applications")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApplicationResponse create(@Valid @RequestBody CreateApplicationRequest request) {
+        return service.create(request);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<JobApplicationResponse> update(
-            @PathVariable Long id,
-            @Valid @RequestBody JobApplicationRequest request
-    ) {
-        try {
-            return ResponseEntity.ok(jobApplicationService.update(id, request));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/applications/{id}")
+    public ApplicationResponse get(@PathVariable Long id) {
+        return service.get(id);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        try {
-            jobApplicationService.delete(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+    @PatchMapping("/applications/{id}")
+    public ApplicationResponse update(@PathVariable Long id, @Valid @RequestBody UpdateApplicationRequest request) {
+        return service.update(id, request);
+    }
+
+    @DeleteMapping("/applications/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
+    }
+
+    @GetMapping("/applications/{id}/events")
+    public List<EventResponse> events(@PathVariable Long id) {
+        return service.events(id);
+    }
+
+    @GetMapping("/applications/{id}/communications")
+    public List<CommunicationResponse> communications(@PathVariable Long id) {
+        return service.communications(id);
+    }
+
+    @PostMapping("/applications/{id}/communications")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommunicationResponse addCommunication(@PathVariable Long id, @Valid @RequestBody CommunicationRequest request) {
+        return service.addCommunication(id, request);
+    }
+
+    @PatchMapping("/communications/{id}")
+    public CommunicationResponse updateCommunication(@PathVariable Long id, @Valid @RequestBody CommunicationRequest request) {
+        return service.updateCommunication(id, request);
+    }
+
+    @DeleteMapping("/communications/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCommunication(@PathVariable Long id) {
+        service.deleteCommunication(id);
     }
 }

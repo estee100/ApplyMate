@@ -1,0 +1,7 @@
+# Local overrides only — copy from application-local.yml.example
+# Never commit application-local.yml (secrets). Root .gitignore also lists it.
+application-local.yml
+
+# Gradle
+.gradle/
+build/

@@ -2,12 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground: #0f172a;
-  --background: #f1f5f9;
+/* Design tokens. HSL triplets so Tailwind can apply opacity (bg-primary/10). */
+@layer base {
+  :root {
+    --background: 240 20% 99%;
+    --foreground: 240 10% 6%;
+    --card: 0 0% 100%;
+    --muted: 240 6% 96%;
+    --muted-foreground: 240 4% 44%;
+    --border: 240 6% 90%;
+    --ring: 252 83% 60%;
+    --primary: 252 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 199 89% 46%;
+    --accent-foreground: 0 0% 100%;
+    --success: 152 62% 38%;
+    --warning: 35 92% 48%;
+    --danger: 350 80% 52%;
+    --shadow: 240 30% 10%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 97%;
+    --card: 240 8% 7%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 5% 64%;
+    --border: 240 5% 15%;
+    --ring: 252 90% 70%;
+    --primary: 252 90% 68%;
+    --primary-foreground: 240 10% 4%;
+    --accent: 199 89% 60%;
+    --accent-foreground: 240 10% 4%;
+    --success: 152 55% 52%;
+    --warning: 38 92% 60%;
+    --danger: 350 85% 64%;
+    --shadow: 0 0% 0%;
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/60 ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
+@layer components {
+  /* Shared form control look, used by Input, Textarea and Select. */
+  .field {
+    @apply w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm text-foreground shadow-sm
+      placeholder:text-muted-foreground/70 transition-colors
+      hover:border-foreground/20 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .card {
+    @apply rounded-2xl border border-border bg-card shadow-soft;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground;
+  }
+
+  /* The soft aurora behind hero areas. */
+  .aurora {
+    background:
+      radial-gradient(60% 50% at 15% 0%, hsl(var(--primary) / 0.18), transparent 60%),
+      radial-gradient(50% 40% at 90% 10%, hsl(var(--accent) / 0.16), transparent 60%);
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
+
+/* PDF export: the browser's print dialog saves exactly the document page. */
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
 }

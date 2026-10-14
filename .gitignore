@@ -1,0 +1,21 @@
+# Local secrets — must never be committed (copy from application-local.yml.example)
+backend/application-local.yml
+.env
+.env.local
+
+# Build output and dependencies
+node_modules/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
+backend/.gradle/
+backend/build/
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Test output
+frontend/test-results/
+frontend/playwright-report/
