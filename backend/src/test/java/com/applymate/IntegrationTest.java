@@ -1,5 +1,6 @@
 package com.applymate;
 
+import com.applymate.ai.LlmClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -21,7 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * migrations and JSONB columns are exercised exactly as in production.
  * One container is shared by every test class through the cached context.
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "app.ai.api-key=test-key",
+        "app.ai.daily-limit-per-user=5",
+        "app.ai.per-minute-limit-per-user=100"
+})
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
 public abstract class IntegrationTest {
@@ -31,6 +37,10 @@ public abstract class IntegrationTest {
 
     @Autowired
     protected ObjectMapper json;
+
+    /** The model is always mocked: tests never call the network or spend quota. */
+    @MockitoBean
+    protected LlmClient llm;
 
     /** Registers a fresh user and returns a bearer token for them. */
     protected String newUser() throws Exception {
