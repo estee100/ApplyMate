@@ -1,6 +1,7 @@
 package com.applymate;
 
 import com.applymate.ai.LlmClient;
+import com.applymate.jobs.JobSources;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,10 @@ public abstract class IntegrationTest {
     /** The model is always mocked: tests never call the network or spend quota. */
     @MockitoBean
     protected LlmClient llm;
+
+    /** Job sources are mocked too; their parsing is unit-tested in JobParsingTest. */
+    @MockitoBean
+    protected JobSources jobSources;
 
     /** Registers a fresh user and returns a bearer token for them. */
     protected String newUser() throws Exception {
