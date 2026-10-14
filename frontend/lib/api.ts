@@ -296,6 +296,7 @@ export const api = {
     send<T.InterviewPrep>("POST", `/applications/${id}/interview-prep${qs({ refresh })}`),
 
   // Views
+  search: (q: string) => get<T.SearchResults>(`/search${qs({ q })}`),
   history: () => get<T.HistoryEntry[]>("/history"),
   calendar: (from: string, to: string) => get<T.CalendarEvent[]>(`/calendar${qs({ from, to })}`),
   analytics: () => get<T.AnalyticsSummary>("/analytics/summary"),

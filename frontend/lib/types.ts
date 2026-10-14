@@ -285,3 +285,15 @@ export interface CalendarEvent {
   applicationId: number;
   overdue: boolean;
 }
+
+/** Plain text plus [start, end) ranges to emphasise; never HTML. */
+export interface Snippet {
+  text: string;
+  highlights: [number, number][];
+}
+
+export interface SearchResults {
+  query: string;
+  applications: { id: number; jobTitle: string; companyName: string; status: ApplicationStatus; snippet: Snippet }[];
+  jobs: { id: number; title: string; company: string; location: string | null; saved: boolean; snippet: Snippet }[];
+}

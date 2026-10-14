@@ -14,11 +14,14 @@ import {
   LogOut,
   Menu,
   Moon,
+  Search,
   Sun,
   UserRound,
   X,
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
+import { CommandPalette, openCommandPalette } from "@/components/layout/command-palette";
+import { LogApplicationDialog, PasteJobDialog } from "@/components/jobs/add-job-dialogs";
 import { Logo } from "@/components/ui/visuals";
 import { api, getStoredUser } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -85,6 +88,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
+  const [dialog, setDialog] = useState<"add-job" | "log-application" | null>(null);
+  const [mac, setMac] = useState(false);
+
+  useEffect(() => setMac(/Mac|iPhone|iPad/.test(navigator.platform)), []);
   const [user, setUser] = useState<{ email: string; name: string | null } | null>(null);
 
   useEffect(() => setUser(getStoredUser()), []);
@@ -121,12 +128,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       {/* Desktop sidebar */}
       <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-muted/30 px-4 py-5 backdrop-blur md:flex">
-        <div className="mb-8 flex items-center justify-between px-2">
+        <div className="mb-6 flex items-center justify-between px-2">
           <Link href="/dashboard" aria-label="ApplyMate home">
             <Logo />
           </Link>
           <ThemeButton />
         </div>
+        <button
+          onClick={openCommandPalette}
+          className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm transition-colors hover:border-foreground/20 hover:text-foreground"
+        >
+          <Search className="h-4 w-4" />
+          Search
+          <kbd className="ml-auto rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium">{mac ? "⌘K" : "Ctrl K"}</kbd>
+        </button>
         <NavList pathname={pathname} />
         <div className="mt-auto border-t border-border pt-4">{userCard}</div>
       </aside>
@@ -137,6 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
         </Link>
         <div className="flex items-center gap-1">
+          <button onClick={openCommandPalette} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Search">
+            <Search className="h-4 w-4" />
+          </button>
           <ThemeButton />
           <button onClick={() => setDrawer(true)} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Open menu">
             <Menu className="h-5 w-5" />
@@ -164,6 +182,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="md:pl-64 print:p-0">
         <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 md:pb-12 md:pt-10 lg:px-10 print:max-w-none print:p-0">{children}</div>
       </main>
+
+      <CommandPalette onAction={setDialog} />
+      <PasteJobDialog open={dialog === "add-job"} onClose={() => setDialog(null)} onAdded={(d) => router.push(`/jobs/${d.job.id}`)} />
+      <LogApplicationDialog open={dialog === "log-application"} onClose={() => setDialog(null)} />
 
       {/* Mobile tab bar */}
       <nav
