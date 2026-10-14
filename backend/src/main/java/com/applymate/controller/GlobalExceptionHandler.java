@@ -2,6 +2,8 @@ package com.applymate.controller;
 
 import com.applymate.config.RequestIdFilter;
 import com.applymate.error.ApiException;
+import com.applymate.error.Versions;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.slf4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApi(ApiException ex) {
         return error(ex.getStatus(), ex.getMessage());
+    }
+
+    /** Two writers raced past the version check; the loser gets the same 409 as a stale edit. */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        return handleApi(Versions.conflict());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

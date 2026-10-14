@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/form";
 import { Alert, EmptyState, PageHeader, Skeleton } from "@/components/ui/misc";
 import { CompanyLogo } from "@/components/ui/visuals";
 import { LogApplicationDialog } from "@/components/jobs/add-job-dialogs";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 import type { Application, ApplicationStatus } from "@/lib/types";
 import { cn, errorMessage, formatDay, relativeTime, STAGE_LABEL, STAGE_STYLE, STAGES } from "@/lib/utils";
 
 export default function TrackingPage() {
   const toast = useToast();
-  const { data: apps, setData: setApps, error, loading } = useAsync(() => api.applications());
+  const { data: apps, setData: setApps, error, loading, reload } = useAsync(() => api.applications());
   const [query, setQuery] = useState("");
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<ApplicationStatus | null>(null);
@@ -34,11 +34,15 @@ export default function TrackingPage() {
     const before = apps;
     setApps((list) => (list ?? []).map((a) => (a.id === app.id ? { ...a, status: to, statusUpdatedAt: new Date().toISOString() } : a)));
     try {
-      const updated = await api.updateApplication(app.id, { status: to });
+      const updated = await api.updateApplication(app.id, { status: to, version: app.version });
       setApps((list) => (list ?? []).map((a) => (a.id === app.id ? updated : a)));
       toast(`${app.companyName} moved to ${STAGE_LABEL[to]}`);
     } catch (e) {
-      setApps(before);
+      if (e instanceof ApiError && e.isConflict) {
+        reload(); // the board was stale: show what actually happened
+      } else {
+        setApps(before);
+      }
       toast(errorMessage(e), "error");
     }
   }

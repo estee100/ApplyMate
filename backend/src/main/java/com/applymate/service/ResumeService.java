@@ -5,6 +5,7 @@ import com.applymate.ai.Schemas.ResumeContent;
 import com.applymate.ai.Schemas.SkillExtraction;
 import com.applymate.dto.ProfileDtos.*;
 import com.applymate.error.ApiException;
+import com.applymate.error.Versions;
 import com.applymate.model.Resume;
 import com.applymate.model.SkillProfile;
 import com.applymate.repository.ResumeRepository;
@@ -153,18 +154,20 @@ public class ResumeService {
     public MasterResumeResponse master() {
         Resume resume = active(currentUser.id()).orElse(null);
         ResumeContent content = masterOf(resume);
-        return new MasterResumeResponse(content == null ? ResumeNormalizer.empty() : content, content != null);
+        return new MasterResumeResponse(content == null ? ResumeNormalizer.empty() : content, content != null,
+                resume == null ? 0 : resume.getVersion());
     }
 
-    public MasterResumeResponse saveMaster(ResumeContent content) {
+    public MasterResumeResponse saveMaster(ResumeContent content, Long version) {
         Long userId = currentUser.id();
         ResumeContent normalized = ResumeNormalizer.normalize(content);
-        tx.executeWithoutResult(status -> {
+        long newVersion = tx.execute(status -> {
             Resume resume = requireActive(userId);
+            Versions.check(version, resume.getVersion());
             resume.setMasterContent(mapper.valueToTree(normalized));
-            resumes.save(resume);
+            return resumes.saveAndFlush(resume).getVersion();
         });
-        return new MasterResumeResponse(normalized, true);
+        return new MasterResumeResponse(normalized, true, newVersion);
     }
 
     /** Reads the CV into the master layout for the user to check. Saves nothing. */
@@ -172,7 +175,7 @@ public class ResumeService {
         Long userId = currentUser.id();
         Resume resume = requireActive(userId);
         ResumeContent filled = ResumeNormalizer.normalize(ai.structureResume(userId, resume.getText()).value());
-        return new MasterResumeResponse(filled, false);
+        return new MasterResumeResponse(filled, false, resume.getVersion());
     }
 
     public ResumeContent masterOf(Resume resume) {

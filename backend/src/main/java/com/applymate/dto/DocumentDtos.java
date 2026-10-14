@@ -31,10 +31,11 @@ public final class DocumentDtos {
             String modelUsed,
             String authorName,
             Instant createdAt,
-            Instant updatedAt
+            Instant updatedAt,
+            long version
     ) {}
 
-    public record SaveDocumentRequest(@NotNull JsonNode content) {}
+    public record SaveDocumentRequest(@NotNull JsonNode content, Long version) {}
 
     /** One job in History: what was done on it, newest activity first. */
     public record HistoryEntry(

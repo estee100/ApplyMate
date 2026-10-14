@@ -77,8 +77,9 @@ public class ProfileController {
     }
 
     @PutMapping("/resumes/active/master")
-    public MasterResumeResponse saveMaster(@RequestBody ResumeContent content) {
-        return resumeService.saveMaster(content);
+    public MasterResumeResponse saveMaster(@RequestBody ResumeContent content,
+                                           @RequestParam(required = false) Long version) {
+        return resumeService.saveMaster(content, version);
     }
 
     @PostMapping("/resumes/active/master/fill")

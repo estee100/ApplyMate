@@ -62,6 +62,11 @@ public class JobApplication {
     @Column(name = "reminder_sent_for")
     private LocalDate reminderSentFor;
 
+    /** Optimistic lock: Hibernate adds "where version = ?" to every update. */
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -74,6 +79,8 @@ public class JobApplication {
     }
 
     public Long getId() { return id; }
+
+    public long getVersion() { return version; }
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }

@@ -81,6 +81,8 @@ export interface Application {
   needsFollowUp: boolean;
   manual: boolean;
   createdAt: string;
+  /** Optimistic-lock version; send it back on updates. */
+  version: number;
 }
 
 export interface JobDetail {
@@ -225,6 +227,7 @@ export interface CoverLetterContent {
 export interface MasterResume {
   content: ResumeContent;
   saved: boolean;
+  version: number;
 }
 
 export interface GeneratedDocument {
@@ -240,6 +243,7 @@ export interface GeneratedDocument {
   authorName: string | null;
   createdAt: string;
   updatedAt: string;
+  version: number;
 }
 
 export interface HistoryEntry {

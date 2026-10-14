@@ -60,5 +60,5 @@ public final class ProfileDtos {
     /** {@code warning} explains a partial success, e.g. the CV saved but skill extraction hit the quota. */
     public record UploadResponse(ResumeResponse resume, SkillProfileResponse skillProfile, String warning) {}
 
-    public record MasterResumeResponse(ResumeContent content, boolean saved) {}
+    public record MasterResumeResponse(ResumeContent content, boolean saved, long version) {}
 }

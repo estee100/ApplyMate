@@ -48,7 +48,9 @@ public final class ApplicationDtos {
             @Size(max = 10000) String notes,
             @Size(max = 255) String nextAction,
             LocalDate nextActionDate,
-            Boolean clearNextAction
+            Boolean clearNextAction,
+            /** The version the client loaded; a stale one is a 409. Optional. */
+            Long version
     ) {}
 
     public record ApplicationResponse(
@@ -67,7 +69,8 @@ public final class ApplicationDtos {
             LocalDate nextActionDate,
             boolean needsFollowUp,
             boolean manual,
-            Instant createdAt
+            Instant createdAt,
+            long version
     ) {}
 
     public record EventResponse(

@@ -275,6 +275,7 @@ function MasterResumeCard({ aiEnabled }: { aiEnabled: boolean }) {
   const [content, setContent] = useState<ResumeContent | null>(null);
   const [saved, setSaved] = useState<ResumeContent | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [version, setVersion] = useState<number | undefined>(undefined);
   const [view, setView] = useState<"edit" | "preview">("edit");
   const [saving, setSaving] = useState(false);
   const [filling, setFilling] = useState(false);
@@ -284,6 +285,7 @@ function MasterResumeCard({ aiEnabled }: { aiEnabled: boolean }) {
       setContent(m.content);
       setSaved(m.content);
       setIsSaved(m.saved);
+      setVersion(m.version);
     });
   }, []);
 
@@ -293,10 +295,11 @@ function MasterResumeCard({ aiEnabled }: { aiEnabled: boolean }) {
     if (!content) return;
     setSaving(true);
     try {
-      const m = await api.saveMasterResume(content);
+      const m = await api.saveMasterResume(content, version);
       setContent(m.content);
       setSaved(m.content);
       setIsSaved(true);
+      setVersion(m.version);
       toast("Master resume saved");
     } catch (e) {
       toast(errorMessage(e), "error");

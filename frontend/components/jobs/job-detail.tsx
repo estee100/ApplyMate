@@ -295,6 +295,7 @@ export function JobDetailView({ jobId, onChange }: { jobId: number; onChange?: (
           key={application.id + application.status}
           id={application.id}
           status={application.status}
+          version={application.version}
           dateApplied={application.dateApplied}
           onChanged={load}
         />
@@ -410,11 +411,13 @@ function ActionTile({
 export function ApplicationQuickPanel({
   id,
   status,
+  version,
   dateApplied,
   onChanged,
 }: {
   id: number;
   status: ApplicationStatus;
+  version: number;
   dateApplied: string;
   onChanged: () => void;
 }) {
@@ -426,12 +429,13 @@ export function ApplicationQuickPanel({
   async function save() {
     setSaving(true);
     try {
-      await api.updateApplication(id, { status: next, note: note.trim() || undefined });
+      await api.updateApplication(id, { status: next, note: note.trim() || undefined, version });
       toast(`Moved to ${STAGE_LABEL[next]}`);
       setNote("");
       onChanged();
     } catch (e) {
       toast(errorMessage(e), "error");
+      if (e instanceof ApiError && e.isConflict) onChanged();
     } finally {
       setSaving(false);
     }

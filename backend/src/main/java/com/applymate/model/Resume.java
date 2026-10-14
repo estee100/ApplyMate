@@ -39,10 +39,17 @@ public class Resume {
     @Column(nullable = false)
     private boolean active = true;
 
+    /** Optimistic lock: Hibernate adds "where version = ?" to every update. */
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private Instant uploadedAt = Instant.now();
 
     public Long getId() { return id; }
+
+    public long getVersion() { return version; }
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }

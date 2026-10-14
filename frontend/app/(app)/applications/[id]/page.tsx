@@ -113,7 +113,7 @@ export default function ApplicationPage({ params }: { params: Promise<{ id: stri
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <ApplicationQuickPanel key={app.status} id={app.id} status={app.status} dateApplied={app.dateApplied} onChanged={load} />
+          <ApplicationQuickPanel key={app.status + app.version} id={app.id} status={app.status} version={app.version} dateApplied={app.dateApplied} onChanged={load} />
           {app.status === "INTERVIEWING" && <InterviewPrepCard app={app} />}
           <CommunicationsCard appId={app.id} comms={comms} onChanged={load} />
         </div>
@@ -160,7 +160,9 @@ function NextStepCard({ app, onSaved }: { app: Application; onSaved: (a: Applica
     try {
       const updated = await api.updateApplication(
         app.id,
-        clear ? { clearNextAction: true } : { nextAction: action.trim() || undefined, nextActionDate: date || undefined },
+        clear
+          ? { clearNextAction: true, version: app.version }
+          : { nextAction: action.trim() || undefined, nextActionDate: date || undefined, version: app.version },
       );
       onSaved(updated);
       if (clear) {
@@ -205,7 +207,7 @@ function NotesCard({ app, onSaved }: { app: Application; onSaved: (a: Applicatio
   async function save() {
     setSaving(true);
     try {
-      onSaved(await api.updateApplication(app.id, { notes }));
+      onSaved(await api.updateApplication(app.id, { notes, version: app.version }));
       toast("Notes saved");
     } catch (e) {
       toast(errorMessage(e), "error");

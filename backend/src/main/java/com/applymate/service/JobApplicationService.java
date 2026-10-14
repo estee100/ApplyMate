@@ -2,6 +2,7 @@ package com.applymate.service;
 
 import com.applymate.dto.ApplicationDtos.*;
 import com.applymate.error.ApiException;
+import com.applymate.error.Versions;
 import com.applymate.model.*;
 import com.applymate.repository.*;
 import com.applymate.util.Text;
@@ -118,6 +119,7 @@ public class JobApplicationService {
     @Transactional
     public ApplicationResponse update(Long id, UpdateApplicationRequest req) {
         JobApplication app = owned(id);
+        Versions.check(req.version(), app.getVersion());
 
         boolean statusChanges = req.status() != null && req.status() != app.getStatus();
         String note = Text.clip(req.note(), 1000);
@@ -147,7 +149,8 @@ public class JobApplicationService {
             if (req.nextAction() != null) app.setNextAction(Text.clip(req.nextAction(), 255));
             if (req.nextActionDate() != null) app.setNextActionDate(req.nextActionDate());
         }
-        applications.save(app);
+        // Flush now so the bumped version is in the response (and a lost race fails here).
+        applications.saveAndFlush(app);
         return toResponse(app);
     }
 
@@ -273,7 +276,8 @@ public class JobApplicationService {
                 a.getNextActionDate(),
                 needsFollowUp(a),
                 job == null,
-                a.getCreatedAt()
+                a.getCreatedAt(),
+                a.getVersion()
         );
     }
 

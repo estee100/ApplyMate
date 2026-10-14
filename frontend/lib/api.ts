@@ -18,6 +18,11 @@ export class ApiError extends Error {
   get isRateLimited() {
     return this.status === 429;
   }
+
+  /** Someone saved a newer version first (another tab or device). */
+  get isConflict() {
+    return this.status === 409;
+  }
 }
 
 // --- Session ------------------------------------------------------------------
@@ -218,7 +223,8 @@ export const api = {
   updateSkillProfile: (body: Partial<T.SkillProfile>) => send<T.SkillProfile>("PUT", "/resumes/active/skill-profile", body),
   refreshSkillProfile: () => send<T.SkillProfile>("POST", "/resumes/active/skill-profile/refresh"),
   masterResume: () => get<T.MasterResume>("/resumes/active/master"),
-  saveMasterResume: (content: T.ResumeContent) => send<T.MasterResume>("PUT", "/resumes/active/master", content),
+  saveMasterResume: (content: T.ResumeContent, version?: number) =>
+    send<T.MasterResume>("PUT", `/resumes/active/master${qs({ version })}`, content),
   fillMasterResume: () => send<T.MasterResume>("POST", "/resumes/active/master/fill"),
 
   // Jobs
@@ -243,8 +249,8 @@ export const api = {
   coverLetter: (jobId: number, instructions?: string) =>
     send<T.GeneratedDocument>("POST", `/jobs/${jobId}/documents/cover-letter`, { instructions }),
   document: (id: number) => get<T.GeneratedDocument>(`/documents/${id}`),
-  saveDocument: (id: number, content: T.ResumeContent | T.CoverLetterContent) =>
-    send<T.GeneratedDocument>("PUT", `/documents/${id}`, { content }),
+  saveDocument: (id: number, content: T.ResumeContent | T.CoverLetterContent, version?: number) =>
+    send<T.GeneratedDocument>("PUT", `/documents/${id}`, { content, version }),
   resetDocument: (id: number) => send<T.GeneratedDocument>("POST", `/documents/${id}/reset`),
   deleteDocument: (id: number) => send<void>("DELETE", `/documents/${id}`),
 
@@ -276,6 +282,7 @@ export const api = {
       nextAction: string;
       nextActionDate: string;
       clearNextAction: boolean;
+      version: number;
     }>,
   ) => send<T.Application>("PATCH", `/applications/${id}`, body),
   deleteApplication: (id: number) => send<void>("DELETE", `/applications/${id}`),

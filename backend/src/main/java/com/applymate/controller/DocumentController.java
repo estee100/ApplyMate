@@ -53,7 +53,7 @@ public class DocumentController {
 
     @PutMapping("/documents/{id}")
     public DocumentResponse save(@PathVariable Long id, @Valid @RequestBody SaveDocumentRequest request) {
-        return documents.saveEdit(id, request.content());
+        return documents.saveEdit(id, request.content(), request.version());
     }
 
     @PostMapping("/documents/{id}/reset")

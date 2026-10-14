@@ -5,6 +5,7 @@ import com.applymate.ai.Schemas.CoverLetter;
 import com.applymate.ai.Schemas.ResumeContent;
 import com.applymate.dto.DocumentDtos.*;
 import com.applymate.error.ApiException;
+import com.applymate.error.Versions;
 import com.applymate.model.*;
 import com.applymate.repository.GeneratedDocumentRepository;
 import com.applymate.repository.JobMatchRepository;
@@ -101,17 +102,18 @@ public class DocumentService {
     }
 
     @Transactional
-    public DocumentResponse saveEdit(Long id, JsonNode content) {
+    public DocumentResponse saveEdit(Long id, JsonNode content, Long version) {
         GeneratedDocument doc = owned(id);
+        Versions.check(version, doc.getVersion());
         doc.setEditedContent(validated(doc.getKind(), content));
-        return toResponse(documents.save(doc));
+        return toResponse(documents.saveAndFlush(doc));
     }
 
     @Transactional
     public DocumentResponse reset(Long id) {
         GeneratedDocument doc = owned(id);
         doc.setEditedContent(null);
-        return toResponse(documents.save(doc));
+        return toResponse(documents.saveAndFlush(doc));
     }
 
     @Transactional
@@ -179,6 +181,6 @@ public class DocumentService {
         Job job = d.getJob();
         return new DocumentResponse(d.getId(), d.getKind(), job.getId(), job.getTitle(), job.getCompany(),
                 d.currentContent(), d.getContent(), d.getEditedContent() != null, d.getModelUsed(),
-                currentUser.get().getName(), d.getCreatedAt(), d.getUpdatedAt());
+                currentUser.get().getName(), d.getCreatedAt(), d.getUpdatedAt(), d.getVersion());
     }
 }

@@ -10,7 +10,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Alert, Badge, Spinner } from "@/components/ui/misc";
 import { CoverLetterEditor, ResumeEditor } from "@/components/resume/resume-editor";
 import { CoverLetterPreview, ResumePreview } from "@/components/resume/resume-preview";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { CoverLetterContent, GeneratedDocument, ResumeContent } from "@/lib/types";
 import { cn, errorMessage, relativeTime } from "@/lib/utils";
 
@@ -49,12 +49,13 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     if (!draft) return;
     setSaving(true);
     try {
-      const saved = await api.saveDocument(id, draft);
+      const saved = await api.saveDocument(id, draft, doc?.version);
       setDoc(saved);
       setDraft(saved.content);
       toast("Saved");
     } catch (e) {
-      toast(errorMessage(e), "error");
+      // On a conflict the draft is kept so nothing typed is lost; reloading shows the newer copy.
+      toast(e instanceof ApiError && e.isConflict ? `${errorMessage(e)} Your edits are still here.` : errorMessage(e), "error");
     } finally {
       setSaving(false);
     }
