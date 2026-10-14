@@ -26,6 +26,21 @@ services:
       SPRING_DATASOURCE_USERNAME: applymate
       SPRING_DATASOURCE_PASSWORD: applymate
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-at-least-256-bits}
+      FRONTEND_URL: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      # Optional: without these, AI features are off and the feed is remote-only.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+      JOB_COUNTRY: ${JOB_COUNTRY:-ca}
+      # Optional email. Without it, reset links are printed to this container's log.
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-ApplyMate <no-reply@applymate.local>}
+      LOG_RESET_LINKS: ${LOG_RESET_LINKS:-true}
     ports:
       - "8000:8080"
     depends_on:
@@ -37,10 +52,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        # Baked into the client bundle at build time.
         NEXT_PUBLIC_API_URL: http://localhost:8000/api
     container_name: applymate-frontend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api
     ports:
       - "3000:3000"
     depends_on:
