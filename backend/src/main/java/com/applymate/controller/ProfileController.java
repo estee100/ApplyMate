@@ -3,6 +3,7 @@ package com.applymate.controller;
 import com.applymate.ai.Schemas.ResumeContent;
 import com.applymate.dto.ProfileDtos.*;
 import com.applymate.error.ApiException;
+import com.applymate.service.AccountService;
 import com.applymate.service.ProfileService;
 import com.applymate.service.ResumeService;
 import jakarta.validation.Valid;
@@ -18,11 +19,15 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final ResumeService resumeService;
+    private final AccountService accountService;
 
-    public ProfileController(ProfileService profileService, ResumeService resumeService) {
+    public ProfileController(ProfileService profileService, ResumeService resumeService, AccountService accountService) {
         this.profileService = profileService;
         this.resumeService = resumeService;
+        this.accountService = accountService;
     }
+
+    public record DeleteAccountRequest(String password) {}
 
     @GetMapping("/profile")
     public ProfileResponse profile() {
@@ -32,6 +37,13 @@ public class ProfileController {
     @PatchMapping("/profile")
     public ProfileResponse updateProfile(@Valid @RequestBody ProfileUpdate update) {
         return profileService.update(update);
+    }
+
+    /** Permanently deletes the account and everything in it. Needs the password. */
+    @DeleteMapping("/profile")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAccount(@RequestBody DeleteAccountRequest request) {
+        accountService.deleteAccount(request.password());
     }
 
     @GetMapping("/resumes")

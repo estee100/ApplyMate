@@ -55,6 +55,11 @@ app:
   mail:
     enabled: ${MAIL_ENABLED:false}
     from: ${SMTP_FROM:ApplyMate <no-reply@applymate.local>}
+    # Local development only: print reset links to the log when email is off.
+    log-links-when-disabled: ${LOG_RESET_LINKS:false}
+  auth:
+    register-per-hour-per-ip: ${REGISTER_PER_HOUR_PER_IP:10}
+    login-per-15-minutes-per-ip: ${LOGIN_PER_15_MINUTES_PER_IP:50}
 
 logging:
   level:

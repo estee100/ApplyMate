@@ -27,7 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "app.ai.api-key=test-key",
         "app.ai.daily-limit-per-user=5",
-        "app.ai.per-minute-limit-per-user=100"
+        "app.ai.per-minute-limit-per-user=100",
+        // Every test registers from the same MockMvc address.
+        "app.auth.register-per-hour-per-ip=100000",
+        "app.auth.login-per-15-minutes-per-ip=100000"
 })
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
