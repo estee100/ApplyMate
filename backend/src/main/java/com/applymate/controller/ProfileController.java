@@ -4,10 +4,13 @@ import com.applymate.ai.Schemas.ResumeContent;
 import com.applymate.dto.ProfileDtos.*;
 import com.applymate.error.ApiException;
 import com.applymate.service.AccountService;
+import com.applymate.service.AvatarService;
 import com.applymate.service.ProfileService;
 import com.applymate.service.ResumeService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,8 +23,11 @@ public class ProfileController {
     private final ProfileService profileService;
     private final ResumeService resumeService;
     private final AccountService accountService;
+    private final AvatarService avatarService;
 
-    public ProfileController(ProfileService profileService, ResumeService resumeService, AccountService accountService) {
+    public ProfileController(ProfileService profileService, ResumeService resumeService, AccountService accountService,
+                             AvatarService avatarService) {
+        this.avatarService = avatarService;
         this.profileService = profileService;
         this.resumeService = resumeService;
         this.accountService = accountService;
@@ -44,6 +50,36 @@ public class ProfileController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAccount(@RequestBody DeleteAccountRequest request) {
         accountService.deleteAccount(request.password());
+    }
+
+    @PostMapping(value = "/profile/avatar", consumes = "multipart/form-data")
+    public java.util.Map<String, Object> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        try {
+            return java.util.Map.of("avatarUpdatedAt", avatarService.upload(file.getBytes()));
+        } catch (IOException e) {
+            throw ApiException.badRequest("The upload could not be read.");
+        }
+    }
+
+    /** The URL carries ?v=updatedAt, so the image can be cached for as long as the browser likes. */
+    @GetMapping(value = "/profile/avatar", produces = "image/png")
+    public ResponseEntity<byte[]> avatar() {
+        return avatarService.get()
+                .map(a -> ResponseEntity.ok()
+                        .cacheControl(CacheControl.maxAge(java.time.Duration.ofDays(365)).cachePrivate())
+                        .body(a.png()))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/profile/avatar")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAvatar() {
+        avatarService.delete();
+    }
+
+    @PostMapping("/resumes/{id}/activate")
+    public ResumeResponse activateResume(@PathVariable Long id) {
+        return resumeService.activate(id);
     }
 
     @GetMapping("/resumes")

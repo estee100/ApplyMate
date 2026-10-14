@@ -186,6 +186,7 @@ export interface Profile {
   skillProfile: SkillProfile | null;
   ai: { enabled: boolean; usedToday: number; dailyLimit: number };
   memberSince: string;
+  avatarUpdatedAt: string | null;
 }
 
 export interface UploadResponse {

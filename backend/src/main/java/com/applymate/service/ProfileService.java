@@ -17,9 +17,11 @@ public class ProfileService {
     private final ResumeService resumes;
     private final SkillProfileRepository profiles;
     private final AiQuota quota;
+    private final AvatarService avatars;
 
     public ProfileService(CurrentUser currentUser, UserRepository users, ResumeService resumes,
-                          SkillProfileRepository profiles, AiQuota quota) {
+                          SkillProfileRepository profiles, AiQuota quota, AvatarService avatars) {
+        this.avatars = avatars;
         this.currentUser = currentUser;
         this.users = users;
         this.resumes = resumes;
@@ -56,7 +58,8 @@ public class ProfileService {
                 resume == null ? null : resumes.toResponse(resume),
                 profile == null ? null : resumes.toResponse(profile),
                 new AiUsageResponse(usage.enabled(), usage.usedToday(), usage.dailyLimit()),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                avatars.updatedAt(user.getId()).orElse(null)
         );
     }
 }

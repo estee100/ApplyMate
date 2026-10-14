@@ -145,6 +145,25 @@ public class ResumeService {
         });
     }
 
+    /**
+     * Make an earlier upload the active resume again. Matches and documents stay tied to
+     * the resume they were made from; the master resume follows the user, not the file.
+     */
+    public ResumeResponse activate(Long resumeId) {
+        Long userId = currentUser.id();
+        return tx.execute(status -> {
+            Resume target = resumes.findByIdAndUserId(resumeId, userId).orElseThrow(() -> ApiException.notFound("Resume"));
+            Resume current = active(userId).orElse(null);
+            if (current != null && current.getId().equals(target.getId())) return toResponse(target);
+            var master = current == null ? null : current.getMasterContent();
+            resumes.deactivateAll(userId);
+            Resume reloaded = resumes.findByIdAndUserId(resumeId, userId).orElseThrow();
+            reloaded.setActive(true);
+            if (master != null && !master.isNull()) reloaded.setMasterContent(master);
+            return toResponse(resumes.saveAndFlush(reloaded));
+        });
+    }
+
     public List<ResumeResponse> list() {
         return resumes.findByUserIdOrderByUploadedAtDesc(currentUser.id()).stream().map(this::toResponse).toList();
     }

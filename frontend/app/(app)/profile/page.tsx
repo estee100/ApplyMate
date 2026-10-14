@@ -25,9 +25,10 @@ import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Switch, Textarea } from "@/components/ui/form";
 import { Alert, Card, CardHeader, PageHeader, Skeleton, Spinner } from "@/components/ui/misc";
 import { ResumeEditor } from "@/components/resume/resume-editor";
+import { announceAvatar, UserAvatar } from "@/components/ui/avatar";
 import { ResumePreview } from "@/components/resume/resume-preview";
 import { api, ApiError, clearSession, saveSession } from "@/lib/api";
-import type { Profile, ResumeContent, SkillProfile } from "@/lib/types";
+import type { Profile, ResumeContent, ResumeInfo, SkillProfile } from "@/lib/types";
 import { cn, errorMessage, formatDay, relativeTime } from "@/lib/utils";
 
 export default function ProfilePage() {
@@ -43,6 +44,11 @@ export default function ProfilePage() {
   useEffect(() => {
     reload();
   }, []);
+
+  // Keep the sidebar avatar in step with the server, e.g. after signing in on a new device.
+  useEffect(() => {
+    if (profile) announceAvatar(profile.avatarUpdatedAt);
+  }, [profile?.avatarUpdatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <Alert>{error}</Alert>;
   if (!profile) return <Spinner label="Loading profile" />;
@@ -160,6 +166,7 @@ function ResumeCard({ profile, onChanged }: { profile: Profile; onChanged: () =>
           }}
         />
         {warning && <Alert tone="warning">{warning}</Alert>}
+        <ResumeVersions key={profile.resume?.id ?? "none"} onChanged={onChanged} />
 
         <div className="rounded-xl bg-muted/40 p-3">
           <div className="flex items-center justify-between text-xs">
@@ -400,6 +407,7 @@ function AccountCard({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
     <Card>
       <CardHeader title="Account" icon={UserRound} />
       <div className="space-y-4 p-5">
+        <AvatarPicker name={profile.name || profile.email} version={profile.avatarUpdatedAt} onChanged={(v) => onSaved({ ...profile, avatarUpdatedAt: v })} />
         <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
         <Field label="Email">{(p) => <Input {...p} value={profile.email} disabled />}</Field>
         <div className="flex items-center justify-between">
@@ -548,5 +556,108 @@ function SecurityCard() {
         </div>
       </Dialog>
     </Card>
+  );
+}
+
+function AvatarPicker({ name, version, onChanged }: { name: string; version: string | null; onChanged: (v: string | null) => void }) {
+  const toast = useToast();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function upload(file: File) {
+    setBusy(true);
+    try {
+      const { avatarUpdatedAt } = await api.uploadAvatar(file);
+      onChanged(avatarUpdatedAt);
+      announceAvatar(avatarUpdatedAt);
+      toast("Profile picture updated");
+    } catch (e) {
+      toast(errorMessage(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    try {
+      await api.deleteAvatar();
+      onChanged(null);
+      announceAvatar(null);
+    } catch (e) {
+      toast(errorMessage(e), "error");
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <UserAvatar name={name} version={version} className="h-16 w-16 text-xl" />
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" loading={busy} onClick={() => input.current?.click()}>
+          {version ? "Change photo" : "Add a photo"}
+        </Button>
+        {version && (
+          <Button size="sm" variant="ghost" onClick={remove}>
+            Remove
+          </Button>
+        )}
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/bmp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) upload(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+function ResumeVersions({ onChanged }: { onChanged: () => void }) {
+  const toast = useToast();
+  const [list, setList] = useState<ResumeInfo[] | null>(null);
+  const [busy, setBusy] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.resumes().then(setList).catch(() => setList([]));
+  }, []);
+
+  if (!list || list.length < 2) return null;
+
+  async function activate(id: number) {
+    setBusy(id);
+    try {
+      await api.activateResume(id);
+      toast("Switched resume. Match scores now use this version.");
+      onChanged();
+    } catch (e) {
+      toast(errorMessage(e), "error");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div>
+      <p className="label">Earlier versions</p>
+      <ul className="divide-y divide-border rounded-xl border border-border">
+        {list
+          .filter((r) => !r.active)
+          .map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm">
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{r.fileName}</span>
+                <span className="text-xs text-muted-foreground">Uploaded {relativeTime(r.uploadedAt)}</span>
+              </span>
+              <Button size="sm" variant="ghost" loading={busy === r.id} onClick={() => activate(r.id)}>
+                Use this version
+              </Button>
+            </li>
+          ))}
+      </ul>
+    </div>
   );
 }

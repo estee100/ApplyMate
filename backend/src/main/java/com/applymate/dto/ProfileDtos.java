@@ -47,7 +47,9 @@ public final class ProfileDtos {
             ResumeResponse resume,
             SkillProfileResponse skillProfile,
             AiUsageResponse ai,
-            Instant memberSince
+            Instant memberSince,
+            /** When the profile picture last changed; null without one. Doubles as a cache-buster. */
+            Instant avatarUpdatedAt
     ) {}
 
     public record ProfileUpdate(

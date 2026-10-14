@@ -23,6 +23,7 @@ import { useTheme } from "@/components/providers";
 import { CommandPalette, openCommandPalette } from "@/components/layout/command-palette";
 import { LogApplicationDialog, PasteJobDialog } from "@/components/jobs/add-job-dialogs";
 import { Logo } from "@/components/ui/visuals";
+import { AVATAR_EVENT, UserAvatar } from "@/components/ui/avatar";
 import { api, getStoredUser } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -92,9 +93,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mac, setMac] = useState(false);
 
   useEffect(() => setMac(/Mac|iPhone|iPad/.test(navigator.platform)), []);
-  const [user, setUser] = useState<{ email: string; name: string | null } | null>(null);
+  const [user, setUser] = useState<{ email: string; name: string | null; avatarVersion?: string | null } | null>(null);
 
-  useEffect(() => setUser(getStoredUser()), []);
+  useEffect(() => {
+    setUser(getStoredUser());
+    const refresh = () => setUser(getStoredUser());
+    window.addEventListener(AVATAR_EVENT, refresh);
+    return () => window.removeEventListener(AVATAR_EVENT, refresh);
+  }, []);
   useEffect(() => setDrawer(false), [pathname]);
 
   async function logout() {
@@ -106,9 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const userCard = (
     <div className="flex items-center gap-3 rounded-xl p-2">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-semibold text-white">
-        {display.slice(0, 1).toUpperCase() || "?"}
-      </span>
+      <UserAvatar name={display} version={user?.avatarVersion} className="h-9 w-9 text-sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{display}</p>
         <p className="truncate text-xs text-muted-foreground">{user?.email}</p>

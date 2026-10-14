@@ -39,7 +39,7 @@ export function getToken(): string | null {
   }
 }
 
-export function getStoredUser(): { email: string; name: string | null } | null {
+export function getStoredUser(): { email: string; name: string | null; avatarVersion?: string | null } | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(USER_KEY);
@@ -120,8 +120,11 @@ function refreshSession(staleAccess: string | null): Promise<boolean> {
 
 // --- Transport ----------------------------------------------------------------
 
-async function request<R>(path: string, options: RequestInit & { auth?: boolean; retried?: boolean } = {}): Promise<R> {
-  const { auth = true, retried = false, ...init } = options;
+async function request<R>(
+  path: string,
+  options: RequestInit & { auth?: boolean; retried?: boolean; blob?: boolean } = {},
+): Promise<R> {
+  const { auth = true, retried = false, blob = false, ...init } = options;
   const headers = new Headers(init.headers);
   if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const token = auth ? getToken() : null;
@@ -153,6 +156,7 @@ async function request<R>(path: string, options: RequestInit & { auth?: boolean;
     throw new ApiError(message, res.status);
   }
   if (res.status === 204) return undefined as R;
+  if (blob) return (await res.blob()) as R;
   const text = await res.text();
   return (text ? JSON.parse(text) : null) as R;
 }
@@ -215,6 +219,17 @@ export const api = {
   updateProfile: (body: Partial<Pick<T.Profile, "name" | "preferredLocation" | "includeRemote" | "emailReminders">>) =>
     send<T.Profile>("PATCH", "/profile", body),
   deleteAccount: (password: string) => send<void>("DELETE", "/profile", { password }),
+  /** The profile picture as an object URL (it needs auth, so it can't be a plain <img src>). */
+  avatar: async (version: string) =>
+    URL.createObjectURL(await request<Blob>(`/profile/avatar${qs({ v: version })}`, { blob: true })),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ avatarUpdatedAt: string }>("/profile/avatar", { method: "POST", body: form });
+  },
+  deleteAvatar: () => send<void>("DELETE", "/profile/avatar"),
+  resumes: () => get<T.ResumeInfo[]>("/resumes"),
+  activateResume: (id: number) => send<T.ResumeInfo>("POST", `/resumes/${id}/activate`),
   uploadResume: (file: File) => {
     const form = new FormData();
     form.append("file", file);
