@@ -2,6 +2,7 @@ import type * as T from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 const TOKEN_KEY = "applymate_token";
+const REFRESH_KEY = "applymate_refresh";
 const USER_KEY = "applymate_user";
 
 /** An error from the API, with the server's user-facing message and HTTP status. */
@@ -45,12 +46,14 @@ export function getStoredUser(): { email: string; name: string | null } | null {
 
 export function saveSession(auth: T.AuthResponse) {
   localStorage.setItem(TOKEN_KEY, auth.token);
+  localStorage.setItem(REFRESH_KEY, auth.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify({ email: auth.email, name: auth.name }));
 }
 
 export function clearSession() {
   try {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
   } catch {
     // storage unavailable: nothing to clear
@@ -65,10 +68,55 @@ function redirectToLogin() {
   }
 }
 
+// --- Session refresh ----------------------------------------------------------
+// Access tokens last 15 minutes. On a 401 the client trades its refresh token for a
+// new pair and retries once. Refresh tokens are single-use and rotated, so two tabs
+// refreshing at once would collide: the Web Locks API serialises refreshes across
+// tabs, and a tab that waited checks whether another tab already refreshed.
+
+let inFlight: Promise<boolean> | null = null;
+
+async function doRefresh(staleAccess: string | null): Promise<boolean> {
+  if (getToken() !== staleAccess) return true; // another tab already refreshed
+  let refreshToken: string | null = null;
+  try {
+    refreshToken = localStorage.getItem(REFRESH_KEY);
+  } catch {
+    return false;
+  }
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return getToken() !== staleAccess;
+    saveSession((await res.json()) as T.AuthResponse);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function refreshSession(staleAccess: string | null): Promise<boolean> {
+  if (!inFlight) {
+    const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+    // `await` flattens the nested promise the Web Locks typings describe.
+    const run: Promise<boolean> = locks
+      ? (async () => await locks.request("applymate-refresh", () => doRefresh(staleAccess)))()
+      : doRefresh(staleAccess);
+    inFlight = run.finally(() => {
+      inFlight = null;
+    });
+  }
+  return inFlight;
+}
+
 // --- Transport ----------------------------------------------------------------
 
-async function request<R>(path: string, options: RequestInit & { auth?: boolean } = {}): Promise<R> {
-  const { auth = true, ...init } = options;
+async function request<R>(path: string, options: RequestInit & { auth?: boolean; retried?: boolean } = {}): Promise<R> {
+  const { auth = true, retried = false, ...init } = options;
   const headers = new Headers(init.headers);
   if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const token = auth ? getToken() : null;
@@ -81,6 +129,9 @@ async function request<R>(path: string, options: RequestInit & { auth?: boolean 
     throw new ApiError("Can't reach the server. Check your connection and try again.", 0);
   }
 
+  if (res.status === 401 && auth && !retried && (await refreshSession(token))) {
+    return request<R>(path, { ...options, retried: true });
+  }
   if (res.status === 401 && auth) {
     clearSession();
     redirectToLogin();
@@ -134,6 +185,23 @@ export const api = {
       auth: false,
       body: JSON.stringify({ token, password }),
     }),
+  /** Revokes this device's session on the server, then forgets it locally. */
+  logout: async () => {
+    let refreshToken: string | null = null;
+    try {
+      refreshToken = localStorage.getItem(REFRESH_KEY);
+    } catch {
+      // storage unavailable
+    }
+    clearSession();
+    if (refreshToken) {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => undefined);
+    }
+  },
   changePassword: (currentPassword: string, newPassword: string) =>
     send<T.AuthResponse>("POST", "/auth/change-password", { currentPassword, newPassword }),
 

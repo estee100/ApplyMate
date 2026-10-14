@@ -6,6 +6,7 @@ import com.applymate.dto.RegisterRequest;
 import com.applymate.service.AccountService;
 import com.applymate.service.AuthService;
 import com.applymate.service.RateLimiter;
+import com.applymate.service.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -28,15 +29,18 @@ public class AuthController {
     private final AuthService authService;
     private final AccountService accountService;
     private final RateLimiter limiter;
+    private final SessionService sessionService;
     private final int registerPerHourPerIp;
     private final int loginPerWindowPerIp;
 
     public AuthController(AuthService authService, AccountService accountService, RateLimiter limiter,
+                          SessionService sessionService,
                           @Value("${app.auth.register-per-hour-per-ip:10}") int registerPerHourPerIp,
                           @Value("${app.auth.login-per-15-minutes-per-ip:50}") int loginPerWindowPerIp) {
         this.authService = authService;
         this.accountService = accountService;
         this.limiter = limiter;
+        this.sessionService = sessionService;
         this.registerPerHourPerIp = registerPerHourPerIp;
         this.loginPerWindowPerIp = loginPerWindowPerIp;
     }
@@ -44,6 +48,8 @@ public class AuthController {
     public record ForgotPasswordRequest(@NotBlank @Email String email) {}
 
     public record ResetPasswordRequest(@NotBlank String token, @NotBlank @Size(min = 8, max = 100) String password) {}
+
+    public record RefreshRequest(@NotBlank @Size(max = 200) String refreshToken) {}
 
     public record ChangePasswordRequest(@NotBlank String currentPassword,
                                         @NotBlank @Size(min = 8, max = 100) String newPassword) {}
@@ -67,6 +73,19 @@ public class AuthController {
         AuthResponse response = authService.login(request);
         limiter.reset(emailKey);
         return response;
+    }
+
+    /** Trade a refresh token for a new access token and a new refresh token. */
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@Valid @RequestBody RefreshRequest request, HttpServletRequest http) {
+        limiter.check("refresh-ip:" + http.getRemoteAddr(), 120, WINDOW, TOO_MANY);
+        return sessionService.refresh(request.refreshToken());
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestBody(required = false) RefreshRequest request) {
+        sessionService.end(request == null ? null : request.refreshToken());
     }
 
     @PostMapping("/forgot-password")

@@ -37,7 +37,9 @@ server:
 
 jwt:
   secret: ${JWT_SECRET:default-dev-secret-change-in-production-min-256-bits-required-for-hs512}
-  expiration-ms: 86400000
+  # 15-minute access tokens, renewed with a rotating 30-day refresh token.
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS:30}
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}

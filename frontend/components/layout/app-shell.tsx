@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
 import { Logo } from "@/components/ui/visuals";
-import { clearSession, getStoredUser } from "@/lib/api";
+import { api, getStoredUser } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -90,8 +90,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => setUser(getStoredUser()), []);
   useEffect(() => setDrawer(false), [pathname]);
 
-  function logout() {
-    clearSession();
+  async function logout() {
+    await api.logout();
     router.replace("/login");
   }
 

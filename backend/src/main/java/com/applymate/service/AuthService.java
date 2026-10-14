@@ -1,6 +1,5 @@
 package com.applymate.service;
 
-import com.applymate.config.JwtService;
 import com.applymate.dto.AuthResponse;
 import com.applymate.dto.LoginRequest;
 import com.applymate.dto.RegisterRequest;
@@ -20,19 +19,19 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final SessionService sessions;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            AuthenticationManager authenticationManager
+            AuthenticationManager authenticationManager,
+            SessionService sessions
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.sessions = sessions;
     }
 
     public static String normalizeEmail(String email) {
@@ -54,7 +53,7 @@ public class AuthService {
             user.setName(request.name().trim());
         }
         userRepository.save(user);
-        return new AuthResponse(jwtService.generateToken(user), user.getEmail(), user.getName());
+        return sessions.start(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -62,6 +61,6 @@ public class AuthService {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> ApiException.notFound("User"));
-        return new AuthResponse(jwtService.generateToken(user), user.getEmail(), user.getName());
+        return sessions.start(user);
     }
 }

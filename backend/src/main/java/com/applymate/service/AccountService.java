@@ -1,7 +1,6 @@
 package com.applymate.service;
 
 import com.applymate.config.AppProperties;
-import com.applymate.config.JwtService;
 import com.applymate.dto.AuthResponse;
 import com.applymate.error.ApiException;
 import com.applymate.model.PasswordResetToken;
@@ -31,18 +30,18 @@ public class AccountService {
     private final UserRepository users;
     private final PasswordResetTokenRepository tokens;
     private final PasswordEncoder encoder;
-    private final JwtService jwt;
+    private final SessionService sessions;
     private final MailService mail;
     private final CurrentUser currentUser;
     private final AppProperties properties;
     private final Clock clock;
 
     public AccountService(UserRepository users, PasswordResetTokenRepository tokens, PasswordEncoder encoder,
-                          JwtService jwt, MailService mail, CurrentUser currentUser, AppProperties properties, Clock clock) {
+                          SessionService sessions, MailService mail, CurrentUser currentUser, AppProperties properties, Clock clock) {
         this.users = users;
         this.tokens = tokens;
         this.encoder = encoder;
-        this.jwt = jwt;
+        this.sessions = sessions;
         this.mail = mail;
         this.currentUser = currentUser;
         this.properties = properties;
@@ -83,6 +82,7 @@ public class AccountService {
         user.setPasswordHash(encoder.encode(newPassword));
         user.bumpTokenVersion();
         users.save(user);
+        sessions.endAll(user.getId());
         row.markUsed(now);
         tokens.save(row);
         tokens.retireAll(user.getId(), now);
@@ -98,7 +98,8 @@ public class AccountService {
         user.setPasswordHash(encoder.encode(next));
         user.bumpTokenVersion();
         users.save(user);
-        return new AuthResponse(jwt.generateToken(user), user.getEmail(), user.getName());
+        sessions.endAll(user.getId());
+        return sessions.start(user);
     }
 
     /** Deletes the account and, by cascade, every resume, match, document and application. */

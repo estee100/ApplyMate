@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
 
@@ -23,9 +24,11 @@ public class JwtService {
 
     private final JwtProperties jwtProperties;
     private final SecretKey key;
+    private final Clock clock;
 
-    public JwtService(JwtProperties jwtProperties) {
+    public JwtService(JwtProperties jwtProperties, Clock clock) {
         this.jwtProperties = jwtProperties;
+        this.clock = clock;
         byte[] keyBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {
             // Fail at startup, not on the first login.
@@ -41,7 +44,7 @@ public class JwtService {
     public record TokenClaims(String email, int version) {}
 
     public String generateToken(User user) {
-        Date now = new Date();
+        Date now = Date.from(clock.instant());
         Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
         // HS256 explicitly: JJWT 0.12 otherwise infers HS512 from key length and
         // rejects secrets shorter than 64 bytes.
@@ -56,7 +59,7 @@ public class JwtService {
 
     public Optional<TokenClaims> parse(String token) {
         try {
-            Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+            Claims claims = Jwts.parser().verifyWith(key).clock(() -> Date.from(clock.instant())).build().parseSignedClaims(token).getPayload();
             Integer version = claims.get(VERSION_CLAIM, Integer.class);
             return Optional.of(new TokenClaims(claims.getSubject(), version == null ? 0 : version));
         } catch (JwtException | IllegalArgumentException e) {

@@ -16,6 +16,8 @@ export type CommunicationDirection = "RECEIVED" | "SENT";
 
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
+  expiresIn: number;
   email: string;
   name: string | null;
 }

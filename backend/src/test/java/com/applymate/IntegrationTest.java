@@ -3,6 +3,7 @@ package com.applymate;
 import com.applymate.ai.LlmClient;
 import com.applymate.jobs.JobSources;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.AfterEach;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -49,6 +50,14 @@ public abstract class IntegrationTest {
     /** Job sources are mocked too; their parsing is unit-tested in JobParsingTest. */
     @MockitoBean
     protected JobSources jobSources;
+
+    @Autowired
+    protected MutableClock clock;
+
+    @AfterEach
+    void resetClock() {
+        clock.reset();
+    }
 
     /** Registers a fresh user and returns a bearer token for them. */
     protected String newUser() throws Exception {
