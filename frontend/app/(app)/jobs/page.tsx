@@ -106,7 +106,8 @@ export default function JobsPage() {
           },
         );
       } catch (e) {
-        if (e instanceof ApiError && (e.isRateLimited || e.status === 503)) setScoreNote(e.message);
+        if (e instanceof ApiError && e.isRateLimited) setScoreNote(`${e.message} Showing the best matches scored so far.`);
+        else if (e instanceof ApiError && e.status === 503) setScoreNote(`${e.message} Recommendations are ranked by skill fit instead.`);
         break;
       }
     }
@@ -163,7 +164,7 @@ export default function JobsPage() {
       />
 
       {/* Search */}
-      <div className="card sticky top-[60px] z-30 mb-8 p-3 md:top-4">
+      <div className="card z-30 mb-8 p-3 md:sticky md:top-4">
         <div className="grid gap-2 md:grid-cols-[1.4fr_1fr_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -248,7 +249,7 @@ export default function JobsPage() {
             <>
               {scoreNote && (
                 <Alert tone="warning" className="mb-4">
-                  {scoreNote} Showing the best matches scored so far.
+                  {scoreNote}
                 </Alert>
               )}
               <JobGrid>

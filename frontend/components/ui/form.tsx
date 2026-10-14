@@ -20,7 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<H
   ref,
 ) {
   return (
-    <div className="relative">
+    <div className="relative h-fit self-start">
       <select ref={ref} className={cn("field appearance-none pr-9", className)} {...props}>
         {children}
       </select>

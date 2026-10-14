@@ -98,7 +98,17 @@ export function formatDay(day: string | null | undefined, opts: Intl.DateTimeFor
 
 export function relativeTime(value: string | null | undefined) {
   if (!value) return "";
-  const date = value.length === 10 ? parseDay(value) : new Date(value);
+  // Date-only values (posted dates, applied dates) are whole days: compare calendar
+  // days, and never say "in 6 minutes" because a source dated it in UTC.
+  if (value.length === 10) {
+    const days = Math.round((parseDay(today()).getTime() - parseDay(value).getTime()) / 86400000);
+    if (days <= 0) return "today";
+    if (days === 1) return "yesterday";
+    if (days < 30) return `${days} days ago`;
+    const months = Math.round(days / 30);
+    return months < 12 ? `${months} month${months === 1 ? "" : "s"} ago` : `${Math.round(days / 365)} year${days < 730 ? "" : "s"} ago`;
+  }
+  const date = new Date(value);
   const seconds = Math.round((date.getTime() - Date.now()) / 1000);
   const abs = Math.abs(seconds);
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });

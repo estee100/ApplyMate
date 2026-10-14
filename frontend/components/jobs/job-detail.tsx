@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/providers";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Textarea } from "@/components/ui/form";
+import { Input, Select } from "@/components/ui/form";
 import { Alert, Badge, Skeleton, StageBadge } from "@/components/ui/misc";
 import { CompanyLogo, MatchRing } from "@/components/ui/visuals";
 import { ApplyLink } from "@/components/jobs/apply-link";
@@ -454,10 +454,9 @@ export function ApplicationQuickPanel({
             </option>
           ))}
         </Select>
-        <Textarea
-          rows={1}
-          className="min-h-[42px]"
+        <Input
           value={note}
+          maxLength={1000}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What happened? e.g. Invited to interview by email"
           disabled={next === status}

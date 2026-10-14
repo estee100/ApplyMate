@@ -80,7 +80,7 @@ export default function TrackingPage() {
           }
         />
       ) : (
-        <div className="scrollbar-thin -mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+        <div className="scrollbar-thin -mx-4 flex snap-x scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:-mx-10 lg:scroll-px-10 lg:px-10">
           {columns.map(({ stage, items }) => (
             <section
               key={stage}
