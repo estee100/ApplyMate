@@ -58,11 +58,13 @@ public class ReminderService {
             if (user == null || !user.isEmailReminders()) continue;
             String step = app.getNextAction() == null ? "Next step" : app.getNextAction();
             String when = app.getNextActionDate().equals(today) ? "today" : "tomorrow, " + DAY.format(app.getNextActionDate());
+            // The dedupe key makes this idempotent: if two instances run the job at once,
+            // or it runs again before the flag below commits, only one email is queued.
             mail.send(user.getEmail(), "Reminder: " + step + " for " + app.getCompanyName(),
                     step + " for " + app.getJobTitle() + " at " + app.getCompanyName() + " is " + when + ".\n\n"
                             + "Open it in ApplyMate: " + properties.frontendUrl() + "/applications/" + app.getId() + "\n\n"
                             + "You can turn reminder emails off on your Profile page.",
-                    null);
+                    null, "reminder:" + app.getId() + ":" + app.getNextActionDate());
             app.setReminderSentFor(app.getNextActionDate());
             sent++;
         }

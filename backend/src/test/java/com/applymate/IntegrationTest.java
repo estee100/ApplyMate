@@ -2,6 +2,7 @@ package com.applymate;
 
 import com.applymate.ai.LlmClient;
 import com.applymate.jobs.JobSources;
+import com.applymate.mail.MailTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterEach;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.auth.register-per-hour-per-ip=100000",
         "app.auth.login-per-15-minutes-per-ip=100000",
         // A random management port, so tests never collide with a running app.
-        "management.server.port=0"
+        "management.server.port=0",
+        // Tests drive the email outbox by hand.
+        "app.outbox.initial-delay-ms=3600000"
 })
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
@@ -52,6 +55,10 @@ public abstract class IntegrationTest {
     /** Job sources are mocked too; their parsing is unit-tested in JobParsingTest. */
     @MockitoBean
     protected JobSources jobSources;
+
+    /** Email delivery is faked; tests decide whether it is available and whether it fails. */
+    @MockitoBean
+    protected MailTransport mailTransport;
 
     @Autowired
     protected MutableClock clock;
