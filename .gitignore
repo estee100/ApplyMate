@@ -15,3 +15,7 @@ backend/build/
 .vscode/
 *.iml
 .DS_Store
+
+# Test output
+frontend/test-results/
+frontend/playwright-report/
