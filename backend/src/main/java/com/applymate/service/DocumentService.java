@@ -9,6 +9,7 @@ import com.applymate.error.Versions;
 import com.applymate.model.*;
 import com.applymate.repository.GeneratedDocumentRepository;
 import com.applymate.repository.JobMatchRepository;
+import com.applymate.resume.KeywordCoverage;
 import com.applymate.resume.ResumeNormalizer;
 import com.applymate.resume.ResumeTailoring;
 import com.applymate.util.Text;
@@ -35,9 +36,12 @@ public class DocumentService {
     private final AiService ai;
     private final CurrentUser currentUser;
     private final ObjectMapper mapper;
+    private final KeywordCoverage keywordCoverage;
 
     public DocumentService(GeneratedDocumentRepository documents, JobMatchRepository matches, JobService jobs,
-                           ResumeService resumes, AiService ai, CurrentUser currentUser, ObjectMapper mapper) {
+                           ResumeService resumes, AiService ai, CurrentUser currentUser, ObjectMapper mapper,
+                           KeywordCoverage keywordCoverage) {
+        this.keywordCoverage = keywordCoverage;
         this.documents = documents;
         this.matches = matches;
         this.jobs = jobs;
@@ -107,6 +111,44 @@ public class DocumentService {
         Versions.check(version, doc.getVersion());
         doc.setEditedContent(validated(doc.getKind(), content));
         return toResponse(documents.saveAndFlush(doc));
+    }
+
+    @Transactional
+    public DocumentResponse setTemplate(Long id, ResumeTemplate template, Long version) {
+        GeneratedDocument doc = owned(id);
+        Versions.check(version, doc.getVersion());
+        doc.setTemplate(template);
+        return toResponse(documents.saveAndFlush(doc));
+    }
+
+    /**
+     * Which of the advert's keywords the document (as currently edited) contains.
+     * Deterministic and free, so it can update as the user types.
+     */
+    @Transactional(readOnly = true)
+    public KeywordCoverage.Coverage keywords(Long id) {
+        GeneratedDocument doc = owned(id);
+        Job job = doc.getJob();
+        List<String> hints = doc.getResumeId() == null ? List.of()
+                : matches.findByUserIdAndJobIdAndResumeId(doc.getUserId(), job.getId(), doc.getResumeId())
+                        .map(m -> m.getRequirementsMet().size() + m.getRequirementsMissing().size() > 0
+                                ? java.util.stream.Stream.concat(m.getRequirementsMet().stream(), m.getRequirementsMissing().stream()).toList()
+                                : List.<String>of())
+                        .orElse(List.of());
+        return keywordCoverage.check(job.getDescription(), hints, flatten(doc.currentContent()));
+    }
+
+    /** Every string in a document, joined: what an ATS would read from it. */
+    static String flatten(JsonNode node) {
+        StringBuilder sb = new StringBuilder();
+        collect(node, sb);
+        return sb.toString();
+    }
+
+    private static void collect(JsonNode node, StringBuilder sb) {
+        if (node == null) return;
+        if (node.isTextual()) sb.append(node.asText()).append('\n');
+        else node.forEach(child -> collect(child, sb));
     }
 
     @Transactional
@@ -181,6 +223,6 @@ public class DocumentService {
         Job job = d.getJob();
         return new DocumentResponse(d.getId(), d.getKind(), job.getId(), job.getTitle(), job.getCompany(),
                 d.currentContent(), d.getContent(), d.getEditedContent() != null, d.getModelUsed(),
-                currentUser.get().getName(), d.getCreatedAt(), d.getUpdatedAt(), d.getVersion());
+                currentUser.get().getName(), d.getCreatedAt(), d.getUpdatedAt(), d.getVersion(), d.getTemplate());
     }
 }

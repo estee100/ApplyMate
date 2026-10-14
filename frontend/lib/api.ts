@@ -266,6 +266,9 @@ export const api = {
   document: (id: number) => get<T.GeneratedDocument>(`/documents/${id}`),
   saveDocument: (id: number, content: T.ResumeContent | T.CoverLetterContent, version?: number) =>
     send<T.GeneratedDocument>("PUT", `/documents/${id}`, { content, version }),
+  documentKeywords: (id: number) => get<T.KeywordCoverage>(`/documents/${id}/keywords`),
+  setDocumentTemplate: (id: number, template: T.ResumeTemplate, version?: number) =>
+    send<T.GeneratedDocument>("PUT", `/documents/${id}/template`, { template, version }),
   resetDocument: (id: number) => send<T.GeneratedDocument>("POST", `/documents/${id}/reset`),
   deleteDocument: (id: number) => send<void>("DELETE", `/documents/${id}`),
 

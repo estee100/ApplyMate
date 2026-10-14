@@ -92,6 +92,30 @@ class DocumentsTest extends IntegrationTest {
     }
 
     @Test
+    void keywordCoverageAndTemplateFollowTheEditedDocument() throws Exception {
+        String token = userWithResume(true);
+        long job = read(send(post("/jobs/paste-text"), token, Map.of("title", "Backend Developer", "company", "Acme",
+                "description", "Build APIs with Java, Kafka and Kubernetes on AWS. " + UUID.randomUUID()))).get("job").get("id").asLong();
+        JsonNode doc = read(call(post("/jobs/" + job + "/documents/from-master"), token));
+        long id = doc.get("id").asLong();
+        assertThat(doc.get("template").asText()).isEqualTo("CLASSIC");
+
+        JsonNode before = read(call(get("/documents/" + id + "/keywords"), token).andExpect(status().isOk()));
+        assertThat(before.get("found").toString()).contains("Java");
+        assertThat(before.get("missing").toString()).contains("Kafka");
+
+        var edited = json.readTree(doc.get("content").toString());
+        ((com.fasterxml.jackson.databind.node.ArrayNode) edited.get("skills")).add("Streaming: Kafka");
+        send(put("/documents/" + id), token, Map.of("content", edited)).andExpect(status().isOk());
+        JsonNode after = read(call(get("/documents/" + id + "/keywords"), token));
+        assertThat(after.get("found").toString()).contains("Kafka");
+        assertThat(after.get("coveragePct").asInt()).isGreaterThan(before.get("coveragePct").asInt());
+
+        send(put("/documents/" + id + "/template"), token, Map.of("template", "MODERN"))
+                .andExpect(jsonPath("$.template").value("MODERN"));
+    }
+
+    @Test
     void coverLetterIsNormalised() throws Exception {
         String token = userWithResume(false);
         long job = paste(token);

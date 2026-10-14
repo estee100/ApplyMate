@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Eye, PencilLine, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, GitCompare, PencilLine, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
+import { ChangesView, KeywordPanel } from "@/components/resume/document-insights";
 import { useToast } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,8 +12,14 @@ import { Alert, Badge, Spinner } from "@/components/ui/misc";
 import { CoverLetterEditor, ResumeEditor } from "@/components/resume/resume-editor";
 import { CoverLetterPreview, ResumePreview } from "@/components/resume/resume-preview";
 import { api, ApiError } from "@/lib/api";
-import type { CoverLetterContent, GeneratedDocument, ResumeContent } from "@/lib/types";
+import type { CoverLetterContent, GeneratedDocument, ResumeContent, ResumeTemplate } from "@/lib/types";
 import { cn, errorMessage, relativeTime } from "@/lib/utils";
+
+const TEMPLATES: [ResumeTemplate, string][] = [
+  ["CLASSIC", "Classic"],
+  ["MODERN", "Modern"],
+  ["COMPACT", "Compact"],
+];
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const id = Number(use(params).id);
@@ -22,7 +29,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
   const [draft, setDraft] = useState<ResumeContent | CoverLetterContent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const [tab, setTab] = useState<"edit" | "preview" | "changes">("edit");
   const [confirm, setConfirm] = useState<"reset" | "delete" | null>(null);
 
   useEffect(() => {
@@ -58,6 +65,17 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
       toast(e instanceof ApiError && e.isConflict ? `${errorMessage(e)} Your edits are still here.` : errorMessage(e), "error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function chooseTemplate(template: ResumeTemplate) {
+    if (!doc || doc.template === template) return;
+    try {
+      const updated = await api.setDocumentTemplate(doc.id, template, doc.version);
+      // Keep the draft: switching layout must not discard unsaved text.
+      setDoc({ ...updated, content: doc.content });
+    } catch (e) {
+      toast(errorMessage(e), "error");
     }
   }
 
@@ -141,11 +159,12 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
       )}
 
       {/* Phone: one pane at a time */}
-      <div className="no-print mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:hidden">
+      <div className="no-print mb-4 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1 lg:hidden">
         {(
           [
             ["edit", "Edit", PencilLine],
             ["preview", "Preview", Eye],
+            ["changes", "Changes", GitCompare],
           ] as const
         ).map(([value, label, Icon]) => (
           <button
@@ -162,16 +181,62 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className={cn("no-print card p-5", tab !== "edit" && "hidden lg:block")}>
-          {isResume ? (
-            <ResumeEditor value={draft as ResumeContent} onChange={setDraft} />
-          ) : (
-            <CoverLetterEditor value={draft as CoverLetterContent} onChange={setDraft} />
-          )}
+        <div className={cn("no-print space-y-6", tab !== "edit" && "hidden lg:block")}>
+          <div className="card p-5">
+            {isResume ? (
+              <ResumeEditor value={draft as ResumeContent} onChange={setDraft} />
+            ) : (
+              <CoverLetterEditor value={draft as CoverLetterContent} onChange={setDraft} />
+            )}
+          </div>
+          <KeywordPanel documentId={doc.id} version={doc.version} />
         </div>
-        <div className={cn("lg:sticky lg:top-6 lg:self-start", tab !== "preview" && "hidden lg:block", "print:!block")}>
-          {isResume ? (
-            <ResumePreview content={draft as ResumeContent} />
+        <div className={cn("space-y-3 lg:sticky lg:top-6 lg:self-start", tab === "edit" && "hidden lg:block", "print:!block")}>
+          <div className="no-print flex flex-wrap items-center justify-between gap-2">
+            <div className="hidden grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:grid">
+              {(
+                [
+                  ["preview", "Preview", Eye],
+                  ["changes", "Changes", GitCompare],
+                ] as const
+              ).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  onClick={() => setTab(value)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium",
+                    (tab === value || (value === "preview" && tab === "edit")) ? "bg-card shadow-sm" : "text-muted-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+            {isResume && tab !== "changes" && (
+              <div className="flex gap-1 rounded-xl bg-muted p-1" role="radiogroup" aria-label="Template">
+                {TEMPLATES.map(([value, label]) => (
+                  <button
+                    key={value}
+                    role="radio"
+                    aria-checked={doc.template === value}
+                    onClick={() => chooseTemplate(value)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs font-medium",
+                      doc.template === value ? "bg-card shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {tab === "changes" ? (
+            <div className="no-print">
+              <ChangesView original={doc.original} current={draft} />
+            </div>
+          ) : isResume ? (
+            <ResumePreview content={draft as ResumeContent} template={doc.template} />
           ) : (
             <CoverLetterPreview content={draft as CoverLetterContent} author={doc.authorName} company={doc.company} />
           )}

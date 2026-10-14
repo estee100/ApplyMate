@@ -11,6 +11,7 @@ export type ApplicationStatus =
 export type JobSource = "ADZUNA" | "HIMALAYAS" | "PASTED";
 export type JobType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
 export type DocumentKind = "RESUME" | "COVER_LETTER";
+export type ResumeTemplate = "CLASSIC" | "MODERN" | "COMPACT";
 export type CommunicationKind = "EMAIL" | "CALL" | "MEETING" | "MESSAGE" | "OTHER";
 export type CommunicationDirection = "RECEIVED" | "SENT";
 
@@ -245,6 +246,13 @@ export interface GeneratedDocument {
   createdAt: string;
   updatedAt: string;
   version: number;
+  template: ResumeTemplate;
+}
+
+export interface KeywordCoverage {
+  coveragePct: number;
+  found: string[];
+  missing: string[];
 }
 
 export interface HistoryEntry {

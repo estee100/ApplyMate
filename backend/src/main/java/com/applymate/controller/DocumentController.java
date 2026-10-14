@@ -56,6 +56,16 @@ public class DocumentController {
         return documents.saveEdit(id, request.content(), request.version());
     }
 
+    @PutMapping("/documents/{id}/template")
+    public DocumentResponse template(@PathVariable Long id, @Valid @RequestBody TemplateRequest request) {
+        return documents.setTemplate(id, request.template(), request.version());
+    }
+
+    @GetMapping("/documents/{id}/keywords")
+    public com.applymate.resume.KeywordCoverage.Coverage keywords(@PathVariable Long id) {
+        return documents.keywords(id);
+    }
+
     @PostMapping("/documents/{id}/reset")
     public DocumentResponse reset(@PathVariable Long id) {
         return documents.reset(id);

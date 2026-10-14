@@ -44,6 +44,10 @@ public class GeneratedDocument {
     @Column(name = "model_used", length = 80)
     private String modelUsed;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ResumeTemplate template = ResumeTemplate.CLASSIC;
+
     /** Optimistic lock: Hibernate adds "where version = ?" to every update. */
     @Version
     @Column(nullable = false)
@@ -86,6 +90,9 @@ public class GeneratedDocument {
 
     public JsonNode getEditedContent() { return editedContent; }
     public void setEditedContent(JsonNode editedContent) { this.editedContent = editedContent; }
+
+    public ResumeTemplate getTemplate() { return template; }
+    public void setTemplate(ResumeTemplate template) { this.template = template; }
 
     public String getModelUsed() { return modelUsed; }
     public void setModelUsed(String modelUsed) { this.modelUsed = modelUsed; }
