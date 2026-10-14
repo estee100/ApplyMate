@@ -27,6 +27,15 @@ class KeywordCoverageTest {
     }
 
     @Test
+    void aNameStartingOneSentenceStillCountsIfItAlsoAppearsMidSentence() {
+        String advert = "Familiarity with Fluxbase, our platform. Fluxbase experience is a plus. Teamwork matters. Teamwork wins.";
+        var terms = coverage.extractTerms(advert, List.of()).stream().map(List::getFirst).toList();
+        assertThat(terms).contains("Fluxbase");
+        // Only ever at the start of a sentence: an ordinary word, not a tool.
+        assertThat(terms).doesNotContain("Teamwork");
+    }
+
+    @Test
     void reportsFoundAndMissingWithVariants() {
         String resume = "Built RESTful services with Java 21, Spring and Postgres. Shipped with Docker and K8s.";
         var result = coverage.check(ADVERT, List.of(), resume);

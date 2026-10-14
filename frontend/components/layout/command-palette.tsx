@@ -249,7 +249,7 @@ export function CommandPalette({ onAction }: { onAction: (action: "add-job" | "l
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search applications and jobs, or type a command"
-            className="h-14 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="h-14 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
             role="combobox"
             aria-expanded="true"
             aria-controls="command-results"

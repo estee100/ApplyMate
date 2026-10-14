@@ -68,17 +68,20 @@ public class KeywordCoverage {
             if (variants.stream().anyMatch(v -> contains(advert, v))) terms.putIfAbsent(key(variants.getFirst()), variants);
         }
         Map<String, Integer> counts = new HashMap<>();
+        Set<String> proven = new HashSet<>();
         for (Pattern p : List.of(ACRONYM, PROPER)) {
             Matcher m = p.matcher(advert);
             while (m.find()) {
                 String word = m.group().replaceAll("[.]+$", "");
                 if (word.length() < 2 || COMMON.contains(word.toLowerCase(Locale.ROOT))) continue;
-                // Every sentence starts with a capital; only a mid-sentence capital suggests a name.
-                if (p == PROPER && startsSentence(advert, m.start())) continue;
                 counts.merge(word, 1, Integer::sum);
+                // Every sentence starts with a capital, so only a mid-sentence capital proves a
+                // name; acronyms are names wherever they appear.
+                if (p == ACRONYM || !startsSentence(advert, m.start())) proven.add(word);
             }
         }
         counts.entrySet().stream()
+                .filter(e -> proven.contains(e.getKey()))
                 .filter(e -> e.getValue() >= 2) // mentioned twice: likely a real requirement, not noise
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .forEach(e -> terms.putIfAbsent(key(e.getKey()), List.of(e.getKey())));
