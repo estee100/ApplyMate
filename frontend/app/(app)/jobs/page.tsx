@@ -66,6 +66,18 @@ export default function JobsPage() {
 
   useEffect(() => setPage(1), [debouncedQ, debouncedLocation, jobType, remoteOnly, days]);
 
+  // The bookmarklet lands here with ?add=<job page URL>: open the dialog prefilled for the
+  // user to confirm, rather than fetching anything automatically from a link.
+  const [prefill, setPrefill] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const add = new URLSearchParams(window.location.search).get("add");
+    if (add && /^https?:\/\//i.test(add)) {
+      setPrefill(add);
+      setPasteOpen(true);
+      window.history.replaceState(null, "", "/jobs");
+    }
+  }, []);
+
   useEffect(() => {
     api.myJobs().then(setMine).catch(() => setMine([]));
     loadRecommendations();
@@ -361,7 +373,7 @@ export default function JobsPage() {
         )}
       </section>
 
-      <PasteJobDialog open={pasteOpen} onClose={() => setPasteOpen(false)} onAdded={(d) => setMine((m) => [d.job, ...(m ?? []).filter((j) => j.id !== d.job.id)])} />
+      <PasteJobDialog initialUrl={prefill} open={pasteOpen} onClose={() => setPasteOpen(false)} onAdded={(d) => setMine((m) => [d.job, ...(m ?? []).filter((j) => j.id !== d.job.id)])} />
       <LogApplicationDialog open={logOpen} onClose={() => setLogOpen(false)} />
     </div>
   );

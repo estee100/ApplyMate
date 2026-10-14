@@ -98,6 +98,11 @@ public final class Schemas {
             @Desc("Gaps in the candidate's fit to be ready to answer honestly") List<String> watchOuts
     ) {}
 
+    public record EmailDraft(
+            @Desc("A short, specific subject line") String subject,
+            @Desc("The email body, plain text, ready to paste; no placeholders like [Name] unless unavoidable") String body
+    ) {}
+
     /** Pulled from a fetched job page when its markup gives nothing better. */
     public record JobExtraction(
             @Desc("The job title, or empty if not found") String title,

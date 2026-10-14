@@ -26,6 +26,7 @@ import { Field, Input, Switch, Textarea } from "@/components/ui/form";
 import { Alert, Card, CardHeader, PageHeader, Skeleton, Spinner } from "@/components/ui/misc";
 import { ResumeEditor } from "@/components/resume/resume-editor";
 import { announceAvatar, UserAvatar } from "@/components/ui/avatar";
+import { IntegrationsCard } from "@/components/tools";
 import { ResumePreview } from "@/components/resume/resume-preview";
 import { api, ApiError, clearSession, saveSession } from "@/lib/api";
 import type { Profile, ResumeContent, ResumeInfo, SkillProfile } from "@/lib/types";
@@ -65,6 +66,7 @@ export default function ProfilePage() {
         <div className="space-y-6">
           <AccountCard profile={profile} onSaved={setProfile} />
           <PreferencesCard profile={profile} onSaved={setProfile} />
+          <IntegrationsCard calendarEnabled={profile.calendarFeedEnabled} onChanged={reload} />
           <SecurityCard />
         </div>
       </div>
@@ -450,6 +452,21 @@ function PreferencesCard({ profile, onSaved }: { profile: Profile; onSaved: (p: 
                 Save
               </Button>
             </div>
+          )}
+        </Field>
+        <Field label="Weekly application goal" hint="Drives the streak on your dashboard.">
+          {(p) => (
+            <Input
+              {...p}
+              type="number"
+              min={1}
+              max={50}
+              defaultValue={profile.weeklyGoal}
+              onBlur={(e) => {
+                const v = Number(e.target.value);
+                if (v >= 1 && v <= 50 && v !== profile.weeklyGoal) update({ weeklyGoal: v }, "Weekly goal saved");
+              }}
+            />
           )}
         </Field>
         <Switch

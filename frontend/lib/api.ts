@@ -216,7 +216,7 @@ export const api = {
 
   // Profile and resume
   profile: () => get<T.Profile>("/profile"),
-  updateProfile: (body: Partial<Pick<T.Profile, "name" | "preferredLocation" | "includeRemote" | "emailReminders">>) =>
+  updateProfile: (body: Partial<Pick<T.Profile, "name" | "preferredLocation" | "includeRemote" | "emailReminders" | "weeklyGoal">>) =>
     send<T.Profile>("PATCH", "/profile", body),
   deleteAccount: (password: string) => send<void>("DELETE", "/profile", { password }),
   /** The profile picture as an object URL (it needs auth, so it can't be a plain <img src>). */
@@ -312,6 +312,19 @@ export const api = {
   interviewPrep: (id: number) => get<T.InterviewPrep | null>(`/applications/${id}/interview-prep`),
   generateInterviewPrep: (id: number, refresh = false) =>
     send<T.InterviewPrep>("POST", `/applications/${id}/interview-prep${qs({ refresh })}`),
+
+  // Tools
+  progress: () => get<T.Progress>("/applications/progress"),
+  exportApplications: () => request<Blob>("/applications/export.csv", { blob: true }),
+  importApplications: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<T.ImportResult>("/applications/import", { method: "POST", body: form });
+  },
+  emailDraft: (id: number, purpose: T.EmailPurpose, extra?: string) =>
+    send<{ subject: string; body: string }>("POST", `/applications/${id}/email-draft`, { purpose, extra }),
+  rotateCalendarFeed: () => send<{ url: string }>("POST", "/profile/calendar-feed"),
+  revokeCalendarFeed: () => send<void>("DELETE", "/profile/calendar-feed"),
 
   // Views
   search: (q: string) => get<T.SearchResults>(`/search${qs({ q })}`),

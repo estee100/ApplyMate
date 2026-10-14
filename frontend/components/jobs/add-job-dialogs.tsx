@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardPaste, Link2 } from "lucide-react";
 import { useToast } from "@/components/providers";
@@ -13,10 +13,26 @@ import type { ApplicationStatus, JobDetail } from "@/lib/types";
 import { cn, errorMessage, STAGE_LABEL, STAGES, today } from "@/lib/utils";
 
 /** Paste a link (fetched server-side) or the advert text (for sites that block fetching). */
-export function PasteJobDialog({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (d: JobDetail) => void }) {
+export function PasteJobDialog({
+  open,
+  onClose,
+  onAdded,
+  initialUrl,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdded: (d: JobDetail) => void;
+  initialUrl?: string;
+}) {
   const toast = useToast();
   const [mode, setMode] = useState<"link" | "text">("link");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl ?? "");
+  useEffect(() => {
+    if (initialUrl) {
+      setMode("link");
+      setUrl(initialUrl);
+    }
+  }, [initialUrl]);
   const [form, setForm] = useState({ title: "", company: "", location: "", url: "", description: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

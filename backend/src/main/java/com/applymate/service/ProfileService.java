@@ -41,6 +41,7 @@ public class ProfileService {
         if (update.preferredLocation() != null) user.setPreferredLocation(Text.clip(update.preferredLocation(), 255));
         if (update.includeRemote() != null) user.setIncludeRemote(update.includeRemote());
         if (update.emailReminders() != null) user.setEmailReminders(update.emailReminders());
+        if (update.weeklyGoal() != null) user.setWeeklyGoal(update.weeklyGoal());
         users.save(user);
         return toResponse(user);
     }
@@ -59,6 +60,8 @@ public class ProfileService {
                 profile == null ? null : resumes.toResponse(profile),
                 new AiUsageResponse(usage.enabled(), usage.usedToday(), usage.dailyLimit()),
                 user.getCreatedAt(),
+                user.getWeeklyGoal(),
+                user.getCalendarTokenHash() != null,
                 avatars.updatedAt(user.getId()).orElse(null)
         );
     }

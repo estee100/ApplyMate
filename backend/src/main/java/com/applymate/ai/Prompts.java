@@ -102,6 +102,13 @@ public final class Prompts {
             + "talk about.\nWhere the candidate is missing something the advert asks for, say so plainly and suggest "
             + "an honest way to answer it, never a way to hide it.";
 
+    static final String EMAIL_SYSTEM = "You draft one short, professional email from a job candidate to an employer.\n\n"
+            + INJECTION_GUARD + "\n\n"
+            + "Use only facts given to you about the application and the candidate. Keep it under 150 words, warm but "
+            + "not effusive, and specific to this role and company. Never invent names, dates, interview details or "
+            + "promises. If a recipient's name is not given, use a neutral greeting. The candidate will review and send "
+            + "it themselves.";
+
     static final String EXTRACT_JOB_SYSTEM = "You read the text of a job advert page and extract its details.\n\n"
             + INJECTION_GUARD + "\n\n"
             + "Extract only what the page states. If a field is not present, return an empty string for it. The "

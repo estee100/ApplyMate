@@ -48,6 +48,8 @@ public final class ProfileDtos {
             SkillProfileResponse skillProfile,
             AiUsageResponse ai,
             Instant memberSince,
+            int weeklyGoal,
+            boolean calendarFeedEnabled,
             /** When the profile picture last changed; null without one. Doubles as a cache-buster. */
             Instant avatarUpdatedAt
     ) {}
@@ -56,7 +58,8 @@ public final class ProfileDtos {
             @Size(max = 120) String name,
             @Size(max = 255) String preferredLocation,
             Boolean includeRemote,
-            Boolean emailReminders
+            Boolean emailReminders,
+            @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(50) Integer weeklyGoal
     ) {}
 
     /** {@code warning} explains a partial success, e.g. the CV saved but skill extraction hit the quota. */

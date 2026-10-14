@@ -58,7 +58,7 @@ class GeminiClientTest {
         });
         server.start();
         metrics = new SimpleMeterRegistry();
-        var props = new AppProperties("http://localhost:3000", List.of(),
+        var props = new AppProperties("http://localhost:3000", "http://localhost:8080/api", List.of(),
                 new AppProperties.Ai("secret-key", List.of("model-a", "model-b"), 25, 6,
                         "http://127.0.0.1:" + server.getAddress().getPort() + "/v1beta"),
                 new AppProperties.Jobs("", "", "ca", 180), new AppProperties.Mail(false, "x"));
@@ -152,7 +152,7 @@ class GeminiClientTest {
 
     @Test
     void noApiKeyMeansDisabledWithoutAnyRequest() {
-        var props = new AppProperties("x", List.of(), new AppProperties.Ai("", List.of("model-a"), 25, 6, "http://127.0.0.1:1"),
+        var props = new AppProperties("x", "http://localhost:8080/api", List.of(), new AppProperties.Ai("", List.of("model-a"), 25, 6, "http://127.0.0.1:1"),
                 new AppProperties.Jobs("", "", "ca", 180), new AppProperties.Mail(false, "x"));
         var disabled = new GeminiClient(props, mapper, Clock.systemUTC(), metrics);
         assertThatThrownBy(() -> disabled.generate("m", "s", "p", MatchAnalysis.class))

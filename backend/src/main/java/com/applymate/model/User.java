@@ -34,6 +34,12 @@ public class User {
     @Column(name = "email_reminders", nullable = false)
     private boolean emailReminders = false;
 
+    @Column(name = "weekly_goal", nullable = false)
+    private int weeklyGoal = 5;
+
+    @Column(name = "calendar_token_hash", length = 64, unique = true)
+    private String calendarTokenHash;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -60,6 +66,12 @@ public class User {
 
     public boolean isEmailReminders() { return emailReminders; }
     public void setEmailReminders(boolean emailReminders) { this.emailReminders = emailReminders; }
+
+    public int getWeeklyGoal() { return weeklyGoal; }
+    public void setWeeklyGoal(int weeklyGoal) { this.weeklyGoal = weeklyGoal; }
+
+    public String getCalendarTokenHash() { return calendarTokenHash; }
+    public void setCalendarTokenHash(String calendarTokenHash) { this.calendarTokenHash = calendarTokenHash; }
 
     public Instant getCreatedAt() { return createdAt; }
 }

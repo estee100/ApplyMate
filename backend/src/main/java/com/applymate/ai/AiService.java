@@ -75,6 +75,13 @@ public class AiService {
         return metered(userId, () -> llm.generate("interview-prep", INTERVIEW_SYSTEM, prompt, InterviewPlan.class));
     }
 
+    public LlmClient.Result<EmailDraft> emailDraft(Long userId, String purpose, String facts, String advert) {
+        String prompt = "PURPOSE: " + purpose + "\n\nFACTS ABOUT THE APPLICATION:\n" + facts + "\n\n"
+                + (advert == null || advert.isBlank() ? "" : untrusted(advert, 6000) + "\n\n")
+                + "Draft the email.";
+        return metered(userId, () -> llm.generate("email-draft", EMAIL_SYSTEM, prompt, EmailDraft.class));
+    }
+
     public LlmClient.Result<JobExtraction> extractJob(Long userId, String pageText, String url) {
         String prompt = "This page was fetched from " + url + "\n\n" + untrusted(pageText, MAX_PAGE_CHARS)
                 + "\n\nExtract the job details.";

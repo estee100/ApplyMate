@@ -27,6 +27,7 @@ import { Alert, Badge, Card, CardHeader, Skeleton, Spinner, StageBadge } from "@
 import { CompanyLogo } from "@/components/ui/visuals";
 import { ApplyLink } from "@/components/jobs/apply-link";
 import { ApplicationQuickPanel } from "@/components/jobs/job-detail";
+import { EmailDraftCard } from "@/components/tools";
 import { api, ApiError } from "@/lib/api";
 import type { Application, ApplicationEvent, Communication, CommunicationDirection, CommunicationKind, InterviewPrep } from "@/lib/types";
 import { COMMUNICATION_LABEL, cn, errorMessage, formatDay, relativeTime, STAGE_LABEL, STAGE_STYLE } from "@/lib/utils";
@@ -116,6 +117,7 @@ export default function ApplicationPage({ params }: { params: Promise<{ id: stri
           <ApplicationQuickPanel key={app.status + app.version} id={app.id} status={app.status} version={app.version} dateApplied={app.dateApplied} onChanged={load} />
           {app.status === "INTERVIEWING" && <InterviewPrepCard app={app} />}
           <CommunicationsCard appId={app.id} comms={comms} onChanged={load} />
+          <EmailDraftCard applicationId={app.id} />
         </div>
         <div className="space-y-6">
           <NextStepCard app={app} onSaved={setApp} />

@@ -19,6 +19,7 @@ import { ButtonLink, Button } from "@/components/ui/button";
 import { Card, CardHeader, EmptyState, Skeleton, StageBadge, Stat } from "@/components/ui/misc";
 import { CompanyLogo } from "@/components/ui/visuals";
 import { LogApplicationDialog } from "@/components/jobs/add-job-dialogs";
+import { WeeklyGoalCard } from "@/components/tools";
 import { api, getStoredUser } from "@/lib/api";
 import type { AnalyticsSummary, Application, ApplicationStats, Profile } from "@/lib/types";
 import { cn, formatDay, greeting, isOpenStage, parseDay, relativeTime, STAGE_LABEL, STAGE_STYLE, STAGES, today } from "@/lib/utils";
@@ -129,9 +130,11 @@ export default function DashboardPage() {
         )}
       </section>
 
+      <div className="grid gap-6 lg:grid-cols-3">
+        <WeeklyGoalCard />
       {/* Pipeline bar */}
       {stats && stats.total > 0 && (
-        <Card className="p-5">
+        <Card className="p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold">Pipeline</h2>
             <Link href="/tracking" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
@@ -160,6 +163,7 @@ export default function DashboardPage() {
           </div>
         </Card>
       )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Recent */}

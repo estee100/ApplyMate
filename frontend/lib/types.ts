@@ -187,7 +187,23 @@ export interface Profile {
   skillProfile: SkillProfile | null;
   ai: { enabled: boolean; usedToday: number; dailyLimit: number };
   memberSince: string;
+  weeklyGoal: number;
+  calendarFeedEnabled: boolean;
   avatarUpdatedAt: string | null;
+}
+
+export interface Progress {
+  goal: number;
+  thisWeek: number;
+  streakWeeks: number;
+  recentWeeks: { weekStart: string; count: number }[];
+}
+
+export type EmailPurpose = "FOLLOW_UP" | "THANK_YOU" | "WITHDRAW" | "ACCEPT_OFFER" | "DECLINE_OFFER";
+
+export interface ImportResult {
+  imported: number;
+  skipped: { line: number; reason: string }[];
 }
 
 export interface UploadResponse {

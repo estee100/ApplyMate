@@ -9,6 +9,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(
         @DefaultValue("http://localhost:3000") String frontendUrl,
+        /** The API's public base URL, used in links that are opened outside the app (calendar feeds). */
+        @DefaultValue("http://localhost:8080/api") String publicApiUrl,
         @DefaultValue({"http://localhost:3000", "http://127.0.0.1:3000"}) List<String> corsAllowedOrigins,
         @DefaultValue Ai ai,
         @DefaultValue Jobs jobs,

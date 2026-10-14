@@ -84,7 +84,7 @@ class JobParsingTest {
 
     @Test
     void adzunaAndHimalayasNormaliseAndUnsafeLinksAreDropped() throws Exception {
-        var props = new AppProperties("http://localhost:3000", List.of(),
+        var props = new AppProperties("http://localhost:3000", "http://localhost:8080/api", List.of(),
                 new AppProperties.Ai("", List.of("m"), 25, 6, "http://unused"),
                 new AppProperties.Jobs("id", "key", "ca", 180),
                 new AppProperties.Mail(false, "x"));
