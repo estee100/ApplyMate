@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InstallPrompt, OfflineBanner, useServiceWorker } from "@/components/pwa";
 
 // --- Theme ------------------------------------------------------------------------
 
@@ -104,9 +105,14 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
 export const useToast = () => useContext(ToastContext);
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useServiceWorker();
   return (
     <ThemeProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <OfflineBanner />
+        {children}
+        <InstallPrompt />
+      </ToastProvider>
     </ThemeProvider>
   );
 }

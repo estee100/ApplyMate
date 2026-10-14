@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
 import { CommandPalette, openCommandPalette } from "@/components/layout/command-palette";
+import { Tour } from "@/components/layout/tour";
 import { LogApplicationDialog, PasteJobDialog } from "@/components/jobs/add-job-dialogs";
 import { Logo } from "@/components/ui/visuals";
 import { AVATAR_EVENT, UserAvatar } from "@/components/ui/avatar";
@@ -70,6 +71,7 @@ function NavList({ pathname, onNavigate }: { pathname: string; onNavigate?: () =
             key={href}
             href={href}
             onClick={onNavigate}
+            data-tour={`nav-${label.toLowerCase()}`}
             aria-current={active ? "page" : undefined}
             className={cn(
               "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
@@ -140,6 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <button
           onClick={openCommandPalette}
+          data-tour="search"
           className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm transition-colors hover:border-foreground/20 hover:text-foreground"
         >
           <Search className="h-4 w-4" />
@@ -188,6 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <CommandPalette onAction={setDialog} />
+      <Tour autoStart={pathname === "/dashboard"} />
       <PasteJobDialog open={dialog === "add-job"} onClose={() => setDialog(null)} onAdded={(d) => router.push(`/jobs/${d.job.id}`)} />
       <LogApplicationDialog open={dialog === "log-application"} onClose={() => setDialog(null)} />
 
@@ -202,6 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
+              data-tour={`nav-${label.toLowerCase()}`}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",

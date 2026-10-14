@@ -51,7 +51,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
+      <section data-tour="hero" className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
         <div className="aurora pointer-events-none absolute inset-0" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>

@@ -14,12 +14,14 @@ import {
   Home,
   KanbanSquare,
   LogOut,
+  Map as MapIcon,
   Moon,
   Plus,
   Search,
   UserRound,
 } from "lucide-react";
 import { useTheme } from "@/components/providers";
+import { startTour } from "@/components/layout/tour";
 import { StageBadge } from "@/components/ui/misc";
 import { api } from "@/lib/api";
 import { useDebounced } from "@/lib/hooks";
@@ -171,6 +173,17 @@ export function CommandPalette({ onAction }: { onAction: (action: "add-job" | "l
         run: () => {
           toggle();
           setOpen(false);
+        },
+      },
+      {
+        id: "tour",
+        group: "Actions",
+        label: "Take the tour",
+        icon: MapIcon,
+        run: () => {
+          setOpen(false);
+          router.push("/dashboard");
+          setTimeout(startTour, 400);
         },
       },
       {

@@ -9,6 +9,8 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 export const metadata: Metadata = {
   title: { default: "ApplyMate", template: "%s · ApplyMate" },
   description: "Find jobs, see how well you match, tailor your resume and track every application.",
+  icons: { apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "ApplyMate", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
