@@ -1,17 +1,13 @@
 package com.applymate.ai;
 
 import com.applymate.config.AppProperties;
+import com.applymate.service.RateLimiter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-user AI limits. The free tier is shared by everyone on the server, so without a
@@ -19,8 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <ul>
  *   <li>Daily: counted in the {@code ai_usage} table, so a restart does not reset it.</li>
- *   <li>Per minute: a sliding window in memory; losing it on restart is harmless.</li>
+ *   <li>Per minute: a token bucket in the shared {@link RateLimiter}.</li>
  * </ul>
+ * Both live in Postgres, so the limits hold however many backend instances run.
  * A request is charged before the model is called (so concurrent requests cannot all
  * slip under the cap) and refunded if the call fails.
  */
@@ -29,27 +26,20 @@ public class AiQuota {
 
     private final JdbcTemplate jdbc;
     private final AppProperties.Ai config;
+    private final RateLimiter limiter;
     private final Clock clock;
-    private final Map<Long, Deque<Instant>> recent = new ConcurrentHashMap<>();
 
-    public AiQuota(JdbcTemplate jdbc, AppProperties properties, Clock clock) {
+    public AiQuota(JdbcTemplate jdbc, AppProperties properties, RateLimiter limiter, Clock clock) {
         this.jdbc = jdbc;
         this.config = properties.ai();
+        this.limiter = limiter;
         this.clock = clock;
     }
 
     /** Reserve one request for this user, or throw a 429 explaining which limit was hit. */
     public void acquire(Long userId) {
-        Instant now = Instant.now(clock);
-        Deque<Instant> window = recent.computeIfAbsent(userId, k -> new ArrayDeque<>());
-        synchronized (window) {
-            while (!window.isEmpty() && window.peekFirst().isBefore(now.minus(Duration.ofMinutes(1)))) {
-                window.pollFirst();
-            }
-            if (window.size() >= config.perMinuteLimitPerUser()) {
-                throw AiException.rateLimited("You're sending AI requests quickly. Wait a minute and try again.");
-            }
-            window.addLast(now);
+        if (!limiter.tryAcquire("ai-minute:" + userId, config.perMinuteLimitPerUser(), Duration.ofMinutes(1))) {
+            throw AiException.rateLimited("You're sending AI requests quickly. Wait a minute and try again.");
         }
 
         // Atomic upsert-and-check: the increment only happens while under the cap.
@@ -59,7 +49,6 @@ public class AiQuota {
                 SET request_count = ai_usage.request_count + 1
                 WHERE ai_usage.request_count < ?""", userId, today(), config.dailyLimitPerUser());
         if (updated == 0) {
-            synchronized (window) { window.pollLast(); }
             throw AiException.rateLimited("You've used today's " + config.dailyLimitPerUser()
                     + " AI requests. They reset at midnight.");
         }
