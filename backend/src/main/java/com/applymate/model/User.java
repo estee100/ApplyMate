@@ -2,8 +2,6 @@ package com.applymate.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -19,45 +17,49 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(length = 120)
+    private String name;
+
+    /** Embedded in every JWT; incrementing it revokes all existing tokens. */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion = 0;
+
+    /** Steers recommendations; blank means use the location on the resume. */
+    @Column(name = "preferred_location")
+    private String preferredLocation;
+
+    @Column(name = "include_remote", nullable = false)
+    private boolean includeRemote = true;
+
+    @Column(name = "email_reminders", nullable = false)
+    private boolean emailReminders = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<JobApplication> jobApplications = new ArrayList<>();
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getId() {
-        return id;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public int getTokenVersion() { return tokenVersion; }
+    public void bumpTokenVersion() { this.tokenVersion++; }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
+    public String getPreferredLocation() { return preferredLocation; }
+    public void setPreferredLocation(String preferredLocation) { this.preferredLocation = preferredLocation; }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
+    public boolean isIncludeRemote() { return includeRemote; }
+    public void setIncludeRemote(boolean includeRemote) { this.includeRemote = includeRemote; }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+    public boolean isEmailReminders() { return emailReminders; }
+    public void setEmailReminders(boolean emailReminders) { this.emailReminders = emailReminders; }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public List<JobApplication> getJobApplications() {
-        return jobApplications;
-    }
+    public Instant getCreatedAt() { return createdAt; }
 }
